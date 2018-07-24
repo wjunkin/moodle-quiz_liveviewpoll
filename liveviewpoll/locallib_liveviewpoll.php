@@ -517,6 +517,7 @@ function quiz_add_firstquestion_to_quiz($quizid, $questionid) {
                     $message .= "\n<br />There was a problem inserting a -1 into the quiz_active_questions table.";
                     return $message;
                 }
+                // The desired question is in the correct location. Hopefully, there is no message.
                 return $message;
             }
         }
@@ -556,6 +557,10 @@ function quiz_add_firstquestion_to_quiz($quizid, $questionid) {
             $record1->maxmark = '0.000';
         }
 
+        if (!($DB->update_record('quiz_slots', $record1))) {
+            $message .= " something went wrong when trying to put question with id = $questionid into slot 1";
+            return;
+        }
         // Put oldfirstslot into the quiz.
         $record2 = new stdClass();
         $record2->quizid = $quizid;
@@ -567,9 +572,7 @@ function quiz_add_firstquestion_to_quiz($quizid, $questionid) {
             $record2->id = $priordesiredquestion->id;
             $record2->page = $priordesiredquestion->page;
             $record2->slot = $priordesiredquestion->slot;
-            if ($DB->update_record('quiz_slots', $record2)) {
-                $message .= " Question with questionid = ".$oldfirstslot->questionid." moved to slot ".$priordesiredquestion->slot;
-            } else {
+            if (!($DB->update_record('quiz_slots', $record2))) {
                 $message .= " An error moving questionid = ".$oldfirstslot->questionid." to slot ".$priordesiredquestion->slot;
                 return $message;
             }
@@ -586,9 +589,11 @@ function quiz_add_firstquestion_to_quiz($quizid, $questionid) {
                 $record2->page = $newslot;
                 if (!($newslotid = $DB->insert_record('quiz_slots', $record2))) {
                     $message .= " Something went wrong trying to insert the question in slot one into a new slot.";
+                    return $message;
                 }
             }
         }
+
         if (!($insertid = $DB->insert_record('quiz_active_questions', $record3))) {
             $message .= "\n<br />There was a problem inserting a -1 into the quiz_active_questions table.";
             return $message;

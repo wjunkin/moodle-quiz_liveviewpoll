@@ -165,42 +165,38 @@ class quiz_liveviewpoll_report extends quiz_default_report {
             echo "<br />You must use the back button on your broswer and correct this before using this quiz for in-class polling.";
             return;
         }
-        // Make sure this is being used for in-class polling. Pages should not be shuffled.
-        $quizsections = $DB->get_record('quiz_sections', array('quizid' => $quiz->id));
-        if ($quizsections->shufflequestions <> 0) {
-            $record = new stdClass();
-            $record->id = $quizsections->id;
-            $record->shufflequestions = 0;
-            $DB->update_record('quiz_sections', $record);
-        }
         if ($activequestion = $DB->get_record('quiz_active_questions', array('quiz_id' => $quiz->id))) {
             // This quiz is already set up for polling.
+            // Make sure this is being used for in-class polling. Pages should not be shuffled.
+            $quizsections = $DB->get_record('quiz_sections', array('quizid' => $quiz->id));
+            if ($quizsections->shufflequestions <> 0) {
+                $record = new stdClass();
+                $record->id = $quizsections->id;
+                $record->shufflequestions = 0;
+                $DB->update_record('quiz_sections', $record);
+            }
             quiz_display_instructor_interface($cm->id, $quiz->id);
         } else {
             $startpoll = optional_param('startpoll', 0, PARAM_INT);
             if ($startpoll) {
-                echo "\nDoing everything";
                 $nocurrentquestionid = quiz_nocurrentq_create($course->id);
                 // Put this question in slot 1 and make sure the questions are not shuffled.
                 $message = quiz_add_firstquestion_to_quiz($quiz->id, $nocurrentquestionid);
                 if (strlen($message) !== 0) {
                     echo $message;
                     exit;
+                } else {
+                    // Everything should be ready to go now.
+                    quiz_display_instructor_interface($cm->id, $quiz->id);
                 }
-                echo "\n<br />No current question is ".$nocurrentquestionid;
 
             } else {
-                echo "\n<br />This quiz has not been set up for polling yet.";
-                echo "\n<br />Please click here to <a href='";
+                echo get_string('quiznotsetforpoll', 'quiz_liveviewpoll');
+                echo "\n<br /><a href='";
                 echo $CFG->wwwroot."/mod/quiz/report.php?id=".$cm->id."&mode=liveviewpoll&startpoll=1'>";
-                echo "prepare this quiz for in-class polling.";
+                echo get_string('preparequizforpoll', 'quiz_liveviewpoll');
                 echo "\n</a>";
-                echo "\n<br />This will ";
-                echo "\n<ol>\n<li>Create a &quot;no_current_question&quot; question that tells the student ";
-                echo "polling has stopped or hasn't started yet.</li>";
-                echo "\n<li>Put the &quot;no_current_question&quot; question as the first question.</li>";
-                echo "\n<li>Change the order of the questions so that students receive the questions";
-                echo " in the order that you send the questions.</li>\n</ol>";
+                echo get_string('preparequizexplanation', 'quiz_liveviewpoll');
             }
         }
         return true;

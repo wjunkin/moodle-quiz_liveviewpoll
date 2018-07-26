@@ -27,8 +27,14 @@ $string['currentquestionis'] = 'The current question is';
 $string['graph'] = '[Graph]';
 $string['liveviewpoll'] = 'Live Polling';
 $string['pluginname'] = 'Live Polling';
+$string['preparequizforpoll'] = 'Please click here to prepare this quiz for in-class polling.';
+$string['preparequizexplanation'] = "\n<br />This will \n<ol>
+        \n<li>Create a &quot;no_current_question&quot; question that tells the student polling has stopped or hasn't started yet.</li>
+        \n<li>Put the &quot;no_current_question&quot; question as the first question.</li>
+        \n<li>Change the order of the questions so that students receive the questions in the order that you send the questions.</li>\n</ol>";
 $string['previewquestion'] = 'Preview question';
 $string['quizname'] = 'Quiz name';
+$string['quiznotsetforpoll'] = "\n<br />This quiz has not been set up for polling yet.";
 $string['quizspreadsheet'] = 'Quiz Spreadsheet';
 $string['sendquestion'] = 'Send Question';
 $string['startpolling'] = 'Start Polling';

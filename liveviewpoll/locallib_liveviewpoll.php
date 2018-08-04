@@ -192,11 +192,11 @@ function quiz_java_graphupdate($quizid, $cmid) {
  */
 function quiz_instructor_buttons($quizid) {
     $mycmid = optional_param('id', '0', PARAM_INT);// The cmid of the quiz instance.
+    $querystring = 'mode=liveviewpoll';
     if ($mycmid) {
-        $querystring = 'id='.$mycmid;
-    } else {
-        $querystring = '';
+        $querystring .= '&id='.$mycmid;
     }
+    
     $disabled = "";
     $myform = "<form action=\"?".$querystring."\" method=\"post\">\n";
     $myform .= "\n";
@@ -236,19 +236,20 @@ function quiz_make_instructor_form($quizid, $cmid) {
         $previewurl = $CFG->wwwroot.'/question/preview.php?id='.
             $items['id'].'&cmid='.$cmid.
             '&behaviour=deferredfeedback&correctness=0&marks=1&markdp=-2&feedback&generalfeedback&rightanswer&history';
-        $myform .= "\n<input type=\"radio\" name=\"question\" value=\"".$items['id']."\" />";
+        $myform .= "\nSend Question <input type=\"submit\" name=\"question\" value=\"".$items['id']."\" />";
         $myform .= "\n<a href=\"$previewurl\" onclick=\"return quizpopup('".$items['id']."')\" target=\"_blank\">";
         $myform .= quiz_create_preview_icon()."</a>";
         $graphurl = $CFG->wwwroot.'/mod/quiz/report/liveviewpoll/quizgraphics.php?question_id='.$items['id']."&quizid=".$quizid;
-        $myform .= "\n<a href=\"".$graphurl."\" target=\"_blank\">".get_string('graph', 'quiz_liveviewpoll')."</a>";
-        $myform .= "\n".$items['question']."<br /><br />\n";
+        $myform .= "\n<a href=\"".$graphurl."\" target=\"_blank\" title='".get_string('graphtooltip', 'quiz_liveviewpoll')."'>";
+        $myform .= get_string('graph', 'quiz_liveviewpoll')."</a>";
+        $myform .= "\n".$items['question']."<br />\n";
     }
-    if (quiz_check_active_question($quizid)) {
+/**    if (quiz_check_active_question($quizid)) {
         $myform .= "<input type=\"submit\" value=\"".get_string('sendquestion', 'quiz_liveviewpoll')."\" />\n</form>\n";
     } else {
         $myform .= "<input type=\"submit\" value=\"".get_string('startpolling', 'quiz_liveviewpoll')."\" />\n</form>\n";
     }
-
+*/
     return($myform);
 }
 

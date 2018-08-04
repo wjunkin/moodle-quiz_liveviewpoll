@@ -24,7 +24,9 @@
 
 $string['changequestions'] = 'Add/Change Questions';
 $string['currentquestionis'] = 'The current question is';
-$string['graph'] = '[Graph]';
+$string['graph'] = 'Graph';
+$string['graphtooltip'] = 'Graph of Question Answers';
+$string['hidenames'] = 'Hide student names.';
 $string['liveviewpoll'] = 'Live Polling';
 $string['pluginname'] = 'Live Polling';
 $string['preparequizforpoll'] = 'Please click here to prepare this quiz for in-class polling.';
@@ -37,6 +39,7 @@ $string['quizname'] = 'Quiz name';
 $string['quiznotsetforpoll'] = "\n<br />This quiz has not been set up for polling yet.";
 $string['quizspreadsheet'] = 'Quiz Spreadsheet';
 $string['sendquestion'] = 'Send Question';
+$string['shownames'] = 'Show student names.';
 $string['startpolling'] = 'Start Polling';
 $string['stoppolling'] = 'Stop Polling';
 $string['totalresponses'] = 'Total responses';

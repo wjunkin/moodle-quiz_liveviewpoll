@@ -196,7 +196,7 @@ function quiz_instructor_buttons($quizid) {
     if ($mycmid) {
         $querystring .= '&id='.$mycmid;
     }
-    
+
     $disabled = "";
     $myform = "<form action=\"?".$querystring."\" method=\"post\">\n";
     $myform .= "\n";
@@ -244,12 +244,6 @@ function quiz_make_instructor_form($quizid, $cmid) {
         $myform .= get_string('graph', 'quiz_liveviewpoll')."</a>";
         $myform .= "\n".$items['question']."<br />\n";
     }
-/**    if (quiz_check_active_question($quizid)) {
-        $myform .= "<input type=\"submit\" value=\"".get_string('sendquestion', 'quiz_liveviewpoll')."\" />\n</form>\n";
-    } else {
-        $myform .= "<input type=\"submit\" value=\"".get_string('startpolling', 'quiz_liveviewpoll')."\" />\n</form>\n";
-    }
-*/
     return($myform);
 }
 

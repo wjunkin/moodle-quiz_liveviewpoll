@@ -23,7 +23,7 @@
  */
 
 $string['changequestions'] = 'Add/Change Questions';
-$string['currentquestionis'] = 'The current question is';
+$string['currentquestionis'] = 'The current question is: ';
 $string['graph'] = 'Graph';
 $string['graphtooltip'] = 'Graph of Question Answers';
 $string['hidenames'] = 'Hide student names.';
@@ -33,7 +33,7 @@ $string['preparequizforpoll'] = 'Please click here to prepare this quiz for in-c
 $string['preparequizexplanation'] = "\n<br />This will \n<ol>
         \n<li>Create a &quot;no_current_question&quot; question that tells the student polling has stopped or hasn't started yet.</li>
         \n<li>Put the &quot;no_current_question&quot; question as the first question.</li>
-        \n<li>Change the order of the questions so that students receive the questions in the order that you send the questions.</li>\n</ol>";
+        \n<li>Change student access to questions so that students receive the questions in the order that you send the questions.</li>\n</ol>";
 $string['previewquestion'] = 'Preview question';
 $string['quizname'] = 'Quiz name';
 $string['quiznotsetforpoll'] = "\n<br />This quiz has not been set up for polling yet.";

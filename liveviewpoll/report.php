@@ -165,7 +165,7 @@ class quiz_liveviewpoll_report extends quiz_default_report {
             echo "<br />You must use the back button on your broswer and correct this before using this quiz for in-class polling.";
             return;
         }
-        if ($activequestion = $DB->get_record('quiz_active_questions', array('quiz_id' => $quiz->id))) {
+        if ($activequestion = $DB->get_record('quiz_current_questions', array('quiz_id' => $quiz->id))) {
             // This quiz is already set up for polling.
             // Make sure this is being used for in-class polling. Pages should not be shuffled.
             $quizsections = $DB->get_record('quiz_sections', array('quizid' => $quiz->id));

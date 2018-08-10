@@ -45,7 +45,7 @@ if ($questionqid) {
     $questiontext = $DB->get_record('question', array('id' => $questionid));
 
 } else {
-    $question = $DB->get_record('quiz_active_questions', array('quiz_id' => $quizid));
+    $question = $DB->get_record('quiz_current_questions', array('quiz_id' => $quizid));
     $questionid = $question->question_id;
     $questiontext = $DB->get_record('question', array('id' => $questionid));
     $timesent = $question->timemodified;

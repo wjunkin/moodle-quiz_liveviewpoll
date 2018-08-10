@@ -114,10 +114,10 @@ function quiz_clear_question($quizid) {
     $record->quiz_id = $quiz->id;
     $record->question_id = -1;
     $record->timemodified = time();
-    if ($DB->record_exists('quiz_active_questions', array('quiz_id' => $quiz->id))) {
-        $mybool = $DB->delete_records('quiz_active_questions', array('quiz_id' => $quiz->id));
+    if ($DB->record_exists('quiz_current_questions', array('quiz_id' => $quiz->id))) {
+        $mybool = $DB->delete_records('quiz_current_questions', array('quiz_id' => $quiz->id));
     }
-    $lastinsertid = $DB->insert_record('quiz_active_questions', $record);
+    $lastinsertid = $DB->insert_record('quiz_current_questions', $record);
     quiz_update_attempts_layout($quizid, $myquestionid);// Hopefully not needed if better communication is developed.
 }
 
@@ -141,10 +141,10 @@ function quiz_send_question($quizid) {
     $record->quiz_id = $quiz->id;
     $record->question_id = $myquestionid;
     $record->timemodified = time();
-    if ($DB->record_exists('quiz_active_questions', array('quiz_id' => $quiz->id))) {
-        $mybool = $DB->delete_records('quiz_active_questions', array('quiz_id' => $quiz->id));
+    if ($DB->record_exists('quiz_current_questions', array('quiz_id' => $quiz->id))) {
+        $mybool = $DB->delete_records('quiz_current_questions', array('quiz_id' => $quiz->id));
     }
-    $lastinsertid = $DB->insert_record('quiz_active_questions', $record);
+    $lastinsertid = $DB->insert_record('quiz_current_questions', $record);
     quiz_update_attempts_layout($quizid, $myquestionid);// Hopefully not needed if better communication is developed.
 }
 
@@ -256,8 +256,8 @@ function quiz_make_instructor_form($quizid, $cmid) {
 function quiz_show_current_question($quizid) {
     global $DB;
 
-    if ($DB->record_exists('quiz_active_questions', array('quiz_id' => $quizid))) {
-        $question = $DB->get_record('quiz_active_questions', array('quiz_id' => $quizid));
+    if ($DB->record_exists('quiz_current_questions', array('quiz_id' => $quizid))) {
+        $question = $DB->get_record('quiz_current_questions', array('quiz_id' => $quizid));
         if ($question->question_id == -1) {
             // This plugin uses -1 for the questionid to indicate that polling has stopped or has not started.
             echo "There is no current question.";
@@ -300,7 +300,7 @@ function quiz_update_attempts_layout($quizid, $questionid) {
 function quiz_check_active_question($quizid) {
     global $DB;
 
-    if ($DB->record_exists('quiz_active_questions', array('quiz_id' => $quizid))) {
+    if ($DB->record_exists('quiz_current_questions', array('quiz_id' => $quizid))) {
         return(1);
     } else {
         return(0);
@@ -486,8 +486,8 @@ function quiz_add_firstquestion_to_quiz($quizid, $questionid) {
         $message .= "Error. There are no questions for this quiz.";
         return $message;
     }
-    // Putting -1 in the field questionid. There should be no entry with this quizid in the quiz_active_questions table.
-    if ($DB->get_records('quiz_active_questions', array('quiz_id' => $quizid))) {
+    // Putting -1 in the field questionid. There should be no entry with this quizid in the quiz_current_questions table.
+    if ($DB->get_records('quiz_current_questions', array('quiz_id' => $quizid))) {
         $message .= "\nError. This quiz is already being used by a quiz instance.";
         return $message;
     } else {
@@ -508,8 +508,8 @@ function quiz_add_firstquestion_to_quiz($quizid, $questionid) {
             // The desired question is already in the quiz. If necessary it will be moved.
             $priordesiredquestion = $quizslot;
             if ($quizslot->slot == 1) {
-                if (!($insertid = $DB->insert_record('quiz_active_questions', $record3))) {
-                    $message .= "\n<br />There was a problem inserting a -1 into the quiz_active_questions table.";
+                if (!($insertid = $DB->insert_record('quiz_current_questions', $record3))) {
+                    $message .= "\n<br />There was a problem inserting a -1 into the quiz_current_questions table.";
                     return $message;
                 }
                 // The desired question is in the correct location. Hopefully, there is no message.
@@ -589,8 +589,8 @@ function quiz_add_firstquestion_to_quiz($quizid, $questionid) {
             }
         }
 
-        if (!($insertid = $DB->insert_record('quiz_active_questions', $record3))) {
-            $message .= "\n<br />There was a problem inserting a -1 into the quiz_active_questions table.";
+        if (!($insertid = $DB->insert_record('quiz_current_questions', $record3))) {
+            $message .= "\n<br />There was a problem inserting a -1 into the quiz_current_questions table.";
             return $message;
         }
     }

@@ -94,8 +94,12 @@ foreach ($allquizattempts as $attempt) {
         $quizattempts[$attempt->userid] = $attempt;
     }
 }
-// This is the same code used in liveviewpoll/quizgraphics.php except for the strings, $quizgraphurl and $quizgraphicurl.
 echo '<html><head></head><body>';
+// After a question is sent, anyone answering any question probably is answering that question.
+echo count($quizattempts)."/".count($quizattpt).get_string('studentshaveanswered', 'quiz_liveviewpoll');// students have answered this question.";
+
+// This is the same code used in liveviewpoll/quizgraphics.php except for the strings, $quizgraphurl and $quizgraphicurl.
+// Also, "current question is" has been removed, since it is redundant.
 foreach ($quizattempts as $quizattempt) {
     $userid = $quizattempt->userid;
     $uniqueid = $quizattempt->uniqueid;
@@ -165,7 +169,6 @@ if ($order) {
     }
 
     $graphinfo = "?data=".implode(",", $myx).$labels."&total=10";
-    echo "\n<br />".get_string('currentquestionis', 'quiz_liveviewpoll').$questiontext->questiontext;
     $graphicurl = $CFG->wwwroot."/mod/quiz/report/liveviewpoll/graph.php";
     echo "\n<br /><img src=\"".$graphicurl.$graphinfo."&cmid=".$cm->id."\"></img>";
 } else {
@@ -178,7 +181,6 @@ if ($order) {
         echo "<a href='".$quizgraphicsurl."?question_id=$questionid&quizid=$quizid&showstudents=1'>";
         echo get_string('shownames', 'quiz_liveviewpoll')."</a>";
     }
-    echo "\n<br />".get_string('currentquestionis', 'quiz_liveviewpoll').$questiontext->questiontext;
     foreach ($stans as $usr => $textanswer) {
         echo "\n<br />";
         if ($showstudents) {

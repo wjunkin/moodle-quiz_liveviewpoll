@@ -42,5 +42,6 @@ $string['sendquestion'] = 'Send Question';
 $string['shownames'] = 'Show student names.';
 $string['startpolling'] = 'Start Polling';
 $string['stoppolling'] = 'Stop Polling';
+$string['studentshaveanswered'] = ' students have answered this question.';
 $string['totalresponses'] = 'Total responses';
 

@@ -94,9 +94,11 @@ foreach ($allquizattempts as $attempt) {
         $quizattempts[$attempt->userid] = $attempt;
     }
 }
-echo '<html><head></head><body>';
-// After a question is sent, anyone answering any question probably is answering that question.
-echo count($quizattempts)."/".count($quizattpt).get_string('studentshaveanswered', 'quiz_liveviewpoll');// students have answered this question.";
+echo '<html><head>';
+if (isset($meta)) {
+    echo $meta;
+}
+echo '</head><body>';
 
 // This is the same code used in liveviewpoll/quizgraphics.php except for the strings, $quizgraphurl and $quizgraphicurl.
 // Also, "current question is" has been removed, since it is redundant.
@@ -108,7 +110,7 @@ foreach ($quizattempts as $quizattempt) {
         $attemptid = $questionattempt->id;
         $attemptsteps = $DB->get_records('question_attempt_steps', array('questionattemptid' => $attemptid));
         foreach ($attemptsteps as $attemptstep) {
-            // Every time a student submits an answer, this generates a new question_attempt_step.
+            // Every time a student looks at a question, this generates a new question_attempt_step.
             // Submitting one answer can generate several rows in the question_attempt_step_data table.
             $stanswer = array();// The array of questionanswerids for this student for multichoice with several answers.
             $attemptstepid = $attemptstep->id;
@@ -150,6 +152,8 @@ foreach ($quizattempts as $quizattempt) {
         }
     }
 }
+// Starting the iframe output.
+echo get_string('responsessofar', 'quiz_liveviewpoll').count($stans)."/".count($quizattpt);
 if ($order) {
     $myx = array();
     foreach ($qanswerids as $qanswerid) {
@@ -175,10 +179,10 @@ if ($order) {
     echo "\n<br />";
     $quizgraphicsurl = $CFG->wwwroot."/mod/quiz/report/liveviewpoll/quizgraphics.php";
     if ($showstudents) {
-        echo "<a href='".$quizgraphicsurl."?question_id=$questionid&quizid=$quizid&showstudents=0'>";
+        echo "<a href='".$quizgraphicsurl."?quizid=$quizid&showstudents=0'>";
         echo get_string('hidenames', 'quiz_liveviewpoll')."</a>";
     } else {
-        echo "<a href='".$quizgraphicsurl."?question_id=$questionid&quizid=$quizid&showstudents=1'>";
+        echo "<a href='".$quizgraphicsurl."?quizid=$quizid&showstudents=1'>";
         echo get_string('shownames', 'quiz_liveviewpoll')."</a>";
     }
     foreach ($stans as $usr => $textanswer) {

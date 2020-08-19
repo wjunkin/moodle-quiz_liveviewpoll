@@ -18,11 +18,10 @@
  * Quiz liveviewpoll report class.
  *
  * @package   quiz_liveviewpoll
- * @copyright 2014 Open University
- * @author    James Pratt <me@jamiep.org>
+ * @copyright Eckerd College
+ * @author    William Junkin <junkinwf@eckerd.edu>
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-
 defined('MOODLE_INTERNAL') || die();
 require_once('locallib_liveviewpoll.php');
 /**
@@ -31,7 +30,7 @@ require_once('locallib_liveviewpoll.php');
  * It gives the most recent answers from all students for the question that was sent.
  * There is an option to show what the grades would be if the quiz were graded at that moment.
  *
- * @copyright 2018 William Junkin
+ * @copyright 2020 William Junkin
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class quiz_liveviewpoll_report extends quiz_default_report {
@@ -60,26 +59,6 @@ class quiz_liveviewpoll_report extends quiz_default_report {
     protected $answer = '';
     /** @var String The URL where the program can find out if a new response has been submitted and thus update the spreadsheet. */
     protected $graphicshashurl = '';
-
-    /**
-     * Return the greatest time that a student responded to a given quiz.
-     *
-     * This is used to determine if the teacher view of the graph should be refreshed.
-     * @param int $quizcontextid The ID for the context for this quiz.
-     * @return int The integer for the greatest time.
-     */
-    private function liveviewquizmaxtime($quizcontextid) {
-        global $DB;
-        $quiztime = $DB->get_records_sql("
-            SELECT max(qa.timemodified)
-            FROM {question_attempts} qa
-            JOIN {question_usages} qu ON qu.id = qa.questionusageid
-            WHERE qu.contextid = ?", array($quizcontextid));
-        foreach ($quiztime as $qkey => $qtm) {
-            $qmaxtime = intval($qkey) + 1;
-        }
-        return $qmaxtime;
-    }
 
     /**
      * Function to get the questionids as the keys to the $slots array so we know all the questions in the quiz.
@@ -112,7 +91,6 @@ class quiz_liveviewpoll_report extends quiz_default_report {
         }
         return $question;
     }
-
     /**
      * Return the number of users who have submitted answers to this quiz instance.
      *
@@ -144,6 +122,7 @@ class quiz_liveviewpoll_report extends quiz_default_report {
         global $OUTPUT, $DB, $CFG;
         $id = optional_param('id', 0, PARAM_INT);
         $mode = optional_param('mode', '', PARAM_ALPHA);
+        $groupid = optional_param('groupid', 0, PARAM_INT);
         $slots = array();
         $question = array();
         $users = array();
@@ -165,7 +144,7 @@ class quiz_liveviewpoll_report extends quiz_default_report {
             echo "<br />You must use the back button on your broswer and correct this before using this quiz for in-class polling.";
             return;
         }
-        if ($activequestion = $DB->get_record('quiz_current_questions', array('quiz_id' => $quiz->id))) {
+        if ($DB->record_exists('quiz_current_questions', array('quiz_id' => $quiz->id))) {
             // This quiz is already set up for polling.
             // Make sure this is being used for in-class polling. Pages should not be shuffled.
             $quizsections = $DB->get_record('quiz_sections', array('quizid' => $quiz->id));
@@ -179,17 +158,19 @@ class quiz_liveviewpoll_report extends quiz_default_report {
         } else {
             $startpoll = optional_param('startpoll', 0, PARAM_INT);
             if ($startpoll) {
-                $nocurrentquestionid = quiz_nocurrentq_create($course->id);
-                // Put this question in slot 1 and make sure the questions are not shuffled.
-                $message = quiz_add_firstquestion_to_quiz($quiz->id, $nocurrentquestionid);
-                if (strlen($message) !== 0) {
-                    echo $message;
-                    exit;
-                } else {
-                    // Everything should be ready to go now.
-                    quiz_display_instructor_interface($cm->id, $quiz->id);
+                addrefreshscript($quiz->id);
+                $record = new stdClass();
+                $record->id = '';
+                $record->course = $quiz->course;
+                $record->cmid = $cm->id;
+                $record->quiz_id = $quiz->id;
+                if ($groupid > 0) {
+                    $record->$groupid;
                 }
-
+                $record->question_id = -1;
+                $record->timemodified = time();
+                $lastinsertid = $DB->insert_record('quiz_current_questions', $record);
+                quiz_display_instructor_interface($cm->id, $quiz->id);
             } else {
                 echo get_string('quiznotsetforpoll', 'quiz_liveviewpoll');
                 echo "\n<br /><a href='";

@@ -18,14 +18,15 @@
  * Quiz liveviewpoll report version information.
  *
  * @package   quiz_liveviewpoll
- * @copyright 2008 Jamie Pratt
+ * @copyright 2020 William Junkin <junkinwf@eckerd.edu>
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version   = 2018052400;
-$plugin->requires  = 2017110800;
+$plugin->version   = 2020072100;
+$plugin->requires  = 2017042000;
 $plugin->cron      = 18000;
 $plugin->component = 'quiz_liveviewpoll';
-$plugin->release   = 'v1.0 (2018052400) for Moodle 3.2+';
+$plugin->maturity = MATURITY_STABLE;
+$plugin->release   = 'v1.5 (2020072100) for Moodle 3.2+';

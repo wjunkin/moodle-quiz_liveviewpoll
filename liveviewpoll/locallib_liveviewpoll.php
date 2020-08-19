@@ -20,17 +20,17 @@
  *
  * It has the following functions: quiz_display_instructor_interface, quiz_clear_question, quiz_send_question.
  * More functions: quiz_instructor_buttons, quiz_make_instructor_form, quiz_show_current_question.
- * More functions: quiz_update_attempts_layout, quiz_check_active_question, quiz_java_graphupdate.
+ * More functions: quiz_update_attempts_layout, quiz_check_active_question.
  * More functions: quiz_get_questions, quiz_create_preview_icon, quiz_get_answers, quiz_random_string.
  * @package   quiz_liveviewpoll
- * @copyright 2018 w. F. Junkin, Eckerd College (http://www.eckerd.edu)
+ * @copyright 2020 w. F. Junkin, Eckerd College (http://www.eckerd.edu)
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 defined('MOODLE_INTERNAL') || die();
-
 /**
  * This function puts all the elements together for the instructors interface.
+ *
  * This is the last stop before it is displayed.
  * @param int $cmid The id for the course module for this quiz instance.
  * @param int $quizid The id of this quiz instance.
@@ -41,7 +41,6 @@ function quiz_display_instructor_interface($cmid, $quizid) {
 
     $clearquestion = optional_param('clearQuestion', null, PARAM_TEXT);
     $sendquestionid = optional_param('question', 0, PARAM_INT);
-
     if (isset($clearquestion)) {
         quiz_clear_question($quizid);
     }
@@ -51,7 +50,6 @@ function quiz_display_instructor_interface($cmid, $quizid) {
         quiz_send_question($quizid, $state->mobile);
     }
 
-    quiz_java_graphupdate($quizid, $cmid);
     $state->mobile = 0;// Not implemented yet.
     echo "<table><tr><td>".quiz_instructor_buttons($quizid)."</td>";
     echo "<td>&nbsp; &nbsp;<a href='".$CFG->wwwroot."/mod/quiz/edit.php?cmid=$cmid'>";
@@ -84,7 +82,7 @@ function quiz_display_instructor_interface($cmid, $quizid) {
     if (quiz_show_current_question($quizid) == 1) {
         echo "<br>";
         echo "<br>";
-        $iframeurl = $CFG->wwwroot."/mod/quiz/report/liveviewpoll/quizgraphics.php?quizid=".$quizid;
+        $iframeurl = $CFG->wwwroot."/mod/quiz/report/liveviewpoll/quizgraphics.php?quizid=$quizid&id=$cmid";
         echo "<iframe id= \"graphIframe\" src=\"".$iframeurl."\" height=\"540\" width=\"723\"></iframe>";
         echo "<br><br><a onclick=\"newwindow=window.open('quizpopupgraph.php?quizid=".$quizid."', '',
                 'width=750,height=560,toolbar=no,location=no,menubar=no,copyhistory=no,status=no,";
@@ -102,28 +100,12 @@ function quiz_display_instructor_interface($cmid, $quizid) {
 function quiz_clear_question($quizid) {
     global $DB;
 
-    $slot = $DB->get_record('quiz_slots', array('quizid' => $quizid, 'slot' => 1));
-    // The question saying that there is not active question should always be in slot 1.
-    $myquestionid = $slot->questionid;
-
-    $quiz = $DB->get_record('quiz', array('id' => $quizid));
-    $record = new stdClass();
-    $record->id = '';
-    $record->course = $quiz->course;
-    $record->ipal_id = 0;
-    $record->quiz_id = $quiz->id;
-    $record->question_id = -1;
-    $record->timemodified = time();
-    if ($DB->record_exists('quiz_current_questions', array('quiz_id' => $quiz->id))) {
-        $mybool = $DB->delete_records('quiz_current_questions', array('quiz_id' => $quiz->id));
-    }
-    $lastinsertid = $DB->insert_record('quiz_current_questions', $record);
-    quiz_update_attempts_layout($quizid, $myquestionid);// Hopefully not needed if better communication is developed.
+    $DB->set_field('quiz_current_questions', 'question_id', '-1', array('quiz_id' => $quizid));
 }
 
 
 /**
- * This function sets the question in the database so the client functions can find what quesiton is active.  And it does it fast.
+ * This function sets the question in the database so the client functions can find what question is active.  And it does it fast.
  *
  * @param int $quizid The id of this quiz instance.
  */
@@ -132,58 +114,65 @@ function quiz_send_question($quizid) {
     global $CFG;
 
     $myquestionid = optional_param('question', 0, PARAM_INT);// The id of the question being sent.
-
-    $quiz = $DB->get_record('quiz', array('id' => $quizid));
-    $record = new stdClass();
-    $record->id = '';
-    $record->course = $quiz->course;
-    $record->ipal_id = 0;
-    $record->quiz_id = $quiz->id;
-    $record->question_id = $myquestionid;
-    $record->timemodified = time();
-    if ($DB->record_exists('quiz_current_questions', array('quiz_id' => $quiz->id))) {
-        $mybool = $DB->delete_records('quiz_current_questions', array('quiz_id' => $quiz->id));
+    $cmid = optional_param('id', 0, PARAM_INT);// The cmid of the quiz.
+    $groupid = optional_param('groupid', 0, PARAM_INT);// the groupid selected by the teacher, if desired.
+    if ($myquestionid > 0 && $cmid > 0) {
+        quiz_update_attempt_layout($quizid, $myquestionid);
+        $quiz = $DB->get_record('quiz', array('id' => $quizid));
+        $record = new stdClass();
+        $record->id = '';
+        $record->course = $quiz->course;
+        $record->cmid = $cmid;
+        $record->quiz_id = $quiz->id;
+        if ($groupid > 0) {
+            $record->groupid = $groupid;
+        }
+        $record->question_id = $myquestionid;
+        $record->timemodified = time();
+        if ($DB->record_exists('quiz_current_questions', array('quiz_id' => $quiz->id))) {
+            $mybool = $DB->delete_records('quiz_current_questions', array('quiz_id' => $quiz->id));
+        }
+        $lastinsertid = $DB->insert_record('quiz_current_questions', $record);
     }
-    $lastinsertid = $DB->insert_record('quiz_current_questions', $record);
-    quiz_update_attempts_layout($quizid, $myquestionid);// Hopefully not needed if better communication is developed.
 }
-
+/**
+ * Sets the layout for the students so that they see the correct question.
+ *
+ * @param int $quizid The id for this quiz.
+ * @param int $questionid The id of the question that the student should see.
+ */
+function quiz_update_attempt_layout($quizid, $questionid) {
+    global $DB;
+    if ($DB->record_exists('quiz_attempts', array('quiz' => $quizid, 'state' => 'inprogress'))) {
+        $slotid = pollingslot($quizid, $questionid);
+        $mylayout = $slotid.',0';
+        for ($i = 1; $i < 10; $i++) {
+            $mylayout = $mylayout.",$slotid,0";
+        }
+        $DB->set_field('quiz_attempts', 'layout', $mylayout, array('quiz' => $quizid, 'state' => 'inprogress'));
+    }
+}
 
 /**
- * Prints out the javascript so that the display is updated whenever a student submits an answer.
+ * Return the greatest time that a student responded to a given quiz.
  *
- * This is done by seeing if the most recent timemodified (supplied by graphicshash.php) has changed.
- * @param int $quizid The id for this quiz.
- * @param int $cmid The id in the course_modules table for this quiz.
+ * This is used to determine if the teacher view of the graph should be refreshed.
+ * @param int $quizcontextid The ID for the context for this quiz.
+ * @return int The integer for the greatest time.
  */
-function quiz_java_graphupdate($quizid, $cmid) {
+function liveviewquizmaxtime($quizcontextid) {
     global $DB;
-    global $CFG;
-    $iframeurl = $CFG->wwwroot."/mod/quiz/report/liveviewpoll/quizgraphics.php?quizid=".$quizid;
-    $graphicshashurl = $CFG->wwwroot."/mod/quiz/report/liveviewpoll/graphicshash.php?id=".$cmid;
-    if ($configs = $DB->get_record('config', array('name' => 'sessiontimeout'))) {
-        $timeout = intval($configs->value);
-    } else {
-        $timeout = 7200;
+    $quiztime = $DB->get_records_sql("
+        SELECT max(qa.timemodified)
+        FROM {question_attempts} qa
+        JOIN {question_usages} qu ON qu.id = qa.questionusageid
+        WHERE qu.contextid = ?", array($quizcontextid));
+    foreach ($quiztime as $qkey => $qtm) {
+        $qmaxtime = intval($qkey) + 1;
     }
-    echo "\n<div id='timemodified' name='-1'></div>";
-    echo "\n\n<script type=\"text/javascript\">\nvar http = false;\nvar x=\"\";\nvar myCount=0;
-            \n\nif(navigator.appName == \"Microsoft Internet Explorer\")
-            {\nhttp = new ActiveXObject(\"Microsoft.XMLHTTP\");\n} else {\nhttp = new XMLHttpRequest();}";
-        echo "\n\nfunction replace() { ";
-        $t = '&t='.time();
-        echo "\n x=document.getElementById('timemodified');";
-        echo "\n myname = x.getAttribute('name');";
-        echo "\nvar t=setTimeout(\"replace()\",3000);\nhttp.open(\"GET\", \"".$graphicshashurl.$t."\", true);";
-        echo "\nhttp.onreadystatechange=function() {\nif(http.readyState == 4) {";
-        echo "\n if((parseInt(http.responseText) != parseInt(myname)) && (myCount < $timeout/3)){";
-        echo "\n    document.getElementById('graphIframe').src=\"".$iframeurl."\"";
-        echo "\n x.setAttribute('name', http.responseText)";
-        echo "\n}\n}\n}";
-        echo "\n http.send(null);";
-        echo "\nmyCount++}\n\nreplace();";
-    echo "\n</script>";
+    return $qmaxtime;
 }
+
 
 /**
  * Make the button controls on the instructor interface.
@@ -223,27 +212,36 @@ function quiz_make_instructor_form($quizid, $cmid) {
 
     $mycmid = optional_param('id', '0', PARAM_INT);// The cmid of the quiz instance.
     $mode = optional_param('mode', '', PARAM_TEXT);
+    $groupid = optional_param('groupid', 0, PARAM_INT);
     if ($mycmid) {
-        $querystring = 'id='.$mycmid.'&mode='.$mode;
+        $querystring = 'id='.$mycmid.'&mode='.$mode.'&groupid='.$groupid;
     } else if ($cmid > 0) {
-        $querystring = 'id='.$cmid.'&mode='.$mode;
+        $querystring = 'id='.$cmid.'&mode='.$mode.'&groupid='.$groupid;
     } else {
         $querystring = '';
     }
 
-    $myform = "<form action=\"?".$querystring."\" method=\"post\">\n";
+    $myform = "<style>
+            p {
+            margin-bottom:0rem
+            }
+            </style>";
+    $myform .= "<form action=\"?".$querystring."\" method=\"post\">\n<table border=0>";
     foreach (quiz_get_questions($quizid) as $items) {
         $previewurl = $CFG->wwwroot.'/question/preview.php?id='.
             $items['id'].'&cmid='.$cmid.
             '&behaviour=deferredfeedback&correctness=0&marks=1&markdp=-2&feedback&generalfeedback&rightanswer&history';
-        $myform .= "\nSend Question <input type=\"submit\" name=\"question\" value=\"".$items['id']."\" />";
-        $myform .= "\n<a href=\"$previewurl\" onclick=\"return quizpopup('".$items['id']."')\" target=\"_blank\">";
-        $myform .= quiz_create_preview_icon()."</a>";
-        $graphurl = $CFG->wwwroot.'/mod/quiz/report/liveviewpoll/quizgraphics.php?question_id='.$items['id']."&quizid=".$quizid;
-        $myform .= "\n<a href=\"".$graphurl."\" target=\"_blank\" title='".get_string('graphtooltip', 'quiz_liveviewpoll')."'>";
-        $myform .= get_string('graph', 'quiz_liveviewpoll')."</a>";
-        $myform .= "\n".$items['question']."<br />\n";
+        $myform .= "\n<tr><td style=\"valign:top\">".get_string('sendquestion', 'quiz_liveviewpoll');
+        $myform .= "</td><td><input type=\"submit\" name=\"question\" value=\"".$items['id']."\" />";
+        $myform .= "</td><td><a href=\"$previewurl\" onclick=\"return quizpopup('".$items['id']."')\" target=\"_blank\">";
+        $myform .= quiz_create_preview_icon()."</a></td>";
+        $graphurl = $CFG->wwwroot.'/mod/quiz/report/liveviewpoll/quizgraphics.php?
+            question_id='.$items['id']."&quizid=".$quizid."&norefresh=1";
+        $myform .= "<td><a href=\"".$graphurl."\" target=\"_blank\" title='".get_string('graphtooltip', 'quiz_liveviewpoll')."'>";
+        $myform .= get_string('graph', 'quiz_liveviewpoll')."</a></td>";
+        $myform .= "<td style=\"margin-bottom:20rem\">".$items['question']."</td></tr>\n";
     }
+    $myform .= "\n</table></form>";
     return($myform);
 }
 
@@ -260,35 +258,45 @@ function quiz_show_current_question($quizid) {
         $question = $DB->get_record('quiz_current_questions', array('quiz_id' => $quizid));
         if ($question->question_id == -1) {
             // This plugin uses -1 for the questionid to indicate that polling has stopped or has not started.
-            echo "There is no current question.";
+            echo get_string('nocurrentquestion', 'quiz_liveviewpoll');
             return(0);
         }
         $questiontext = $DB->get_record('question', array('id' => $question->question_id));
-        echo get_string('currentquestionis', 'quiz_liveviewpoll')." -> ".strip_tags($questiontext->questiontext);
+        echo get_string('currentquestionis', 'quiz_liveviewpoll')." -> ".$questiontext->questiontext;
         return(1);
     } else {
         return(0);
     }
 }
-
 /**
- * This function changes the layout field in the quiz_attempts table so that the student gets the correct question.
+ * Function to add javascript_refresh.js to each qustion.
  *
- * @param int $quizid The id of this quiz instance.
- * @param int $questionid The id of the active question.
+ * @param int $quizid The id for the current quiz.
  */
-function quiz_update_attempts_layout($quizid, $questionid) {
+function addrefreshscript($quizid) {
     global $DB;
-    $slot = $DB->get_record('quiz_slots', array('quizid' => $quizid, 'questionid' => $questionid));
-    $p = $slot->page;
-    $quizattempts = $DB->get_records('quiz_attempts', array('quiz' => $quizid));
-    $record = new stdClass();
-    $layout = "$p,0,$p,0,$p,0,$p,0,$p,0,$p,0,$p,0,$p,0,$p,0,$p,0,$p,0,$p,0,$p,0,$p,0,$p,0,$p,0,$p,0,$p,0";
-    $layout .= ",$p,0,$p,0,$p,0,$p,0,$p,0,$p,0,$p,0,$p,0";
-    $record->layout = $layout;
-    foreach ($quizattempts as $quizattempt) {
-        $record->id = $quizattempt->id;
-        $DB->update_record('quiz_attempts', $record, true);
+    global $CFG;
+    if (!($quizid > 0)) {
+        echo "\n<br />Error. No quizid was furnished.";
+        exit;
+    }
+    $editliburl = $CFG->dirroot.'/question/editlib.php';
+    include_once($editliburl);
+    $slots = $DB->get_records('quiz_slots', array('quizid' => $quizid));
+    foreach ($slots as $slot) {
+        $questionid = $slot->questionid;
+        $question = $DB->get_record('question', array('id' => $questionid));
+        $questiontext = $question->questiontext;
+        if (!(preg_match("/\<polling\>\<\/polling\>/", $questiontext))) {
+            $script = "<polling></polling>\n<script src=\"report/liveviewpoll/javascript_refresh.js\">\n</script>";
+            $newquestiontext = $script.$questiontext;
+            if ($DB->set_field('question', 'questiontext', $newquestiontext, array('id' => $questionid))) {
+                // Clear cache for this question since the question has changed.
+                question_bank::notify_question_edited($questionid);
+            } else {
+                echo "\n<br />Update not successful for question id = $questionid";
+            }
+        }
     }
 }
 
@@ -300,8 +308,12 @@ function quiz_update_attempts_layout($quizid, $questionid) {
 function quiz_check_active_question($quizid) {
     global $DB;
 
-    if ($DB->record_exists('quiz_current_questions', array('quiz_id' => $quizid))) {
-        return(1);
+    if ($currentquestion = $DB->get_record('quiz_current_questions', array('quiz_id' => $quizid))) {
+        if ($currentquestion->question_id > 0) {
+            return(1);
+        } else {
+            return(0);
+        }
     } else {
         return(0);
     }
@@ -330,8 +342,9 @@ function quiz_get_questions($quizid) {
         }
         $aquestions = $DB->get_record('question', array('id' => $q));
         if (isset($aquestions->questiontext)) {
-            $aquestions->questiontext = strip_tags($aquestions->questiontext);
-            $pagearray2[] = array('id' => $q, 'question' => $aquestions->questiontext,
+            $qtext = explode('</script><polling></polling>', $aquestions->questiontext);
+            $myqtext = $qtext[count($qtext) - 1];
+            $pagearray2[] = array('id' => $q, 'question' => $myqtext,
                 'answers' => quiz_get_answers($q));
         }
     }
@@ -367,232 +380,19 @@ function quiz_get_answers($questionid) {
 }
 
 /**
- * Function to create a no_current_question question (telling students there is no active/current question) if it does not exist.
+ * This function returns the correct quiz slot based on the quiz and the current question.
  *
- * The question is created in the default category for the course and the name of the question is no_current_question essay.
- * The function requires the quiz_random_string() function.
- * @param int $courseid The id of the course
- * @return the questionid if the question is found or if the creation is successful.
+ * @param int $quizid The id of this quiz instance.
+ * @param int $currentquestionid The id of the question that was sent.
+ * @return int The quiz_slot for thh question that was sent.
  */
-function quiz_nocurrentq_create($courseid) {
+function pollingslot($quizid, $currentquestionid) {
     global $DB;
-    global $USER;
-    global $COURSE;
-    global $CFG;
-    $contextid = $DB->get_record('context', array('instanceid' => "$courseid", 'contextlevel' => '50'));
-    $mycontextid = $contextid->id;
-    $categories = $DB->get_records_menu('question_categories', array('contextid' => "$mycontextid"));
-    $categoryid = 0;
-    foreach ($categories as $key => $value) {
-        if (preg_match("/Default\ for/", $value)) {
-            if (($value == "Default for ".$COURSE->shortname) or ($categoryid == 0)) {
-                $categoryid = $key;
-            }
-        }
-    }
-    if (!($categoryid > 0)) {
-        debugging('Error obtaining category id for default question category.');
-        return false;
-    }
-    $nocurrentqfind = $DB->count_records('question', array('category' => "$categoryid",
-        'name' => 'no_current_question'));
-    if ($nocurrentqfind > 0) {
-        $nocurrentqs = $DB->get_records('question', array('category' => "$categoryid",
-        'name' => 'no_current_question'));
-        foreach ($nocurrentqs as $nocurrentq) {
-            $nocurrentqid = $nocurrentq->id;
-        }
-        return $nocurrentqid;
-    }
-    $hostname = 'unknownhost';
-    if (!empty($_SERVER['HTTP_HOST'])) {
-        $hostname = $_SERVER['HTTP_HOST'];
-    } else if (!empty($_ENV['HTTP_HOST'])) {
-        $hostname = $_ENV['HTTP_HOST'];
-    } else if (!empty($_SERVER['SERVER_NAME'])) {
-        $hostname = $_SERVER['SERVER_NAME'];
-    } else if (!empty($_ENV['SERVER_NAME'])) {
-        $hostname = $_ENV['SERVER_NAME'];
-    }
-    $questionfieldarray = array('category', 'parent', 'name', 'questiontext', 'questiontextformat', 'generalfeedback',
-        'generalfeedbackformat', 'defaultmark', 'penalty', 'qtype', 'length', 'stamp', 'version', 'hidden',
-        'timecreated', 'timemodified', 'createdby', 'modifiedby');
-    $questionnotnullarray = array('name', 'questiontext', 'generalfeedback');
-    $questioninsert = new stdClass();
-    $date = gmdate("ymdHis");
-    $questioninsert->category = $categoryid;
-    $questioninsert->parent = 0;
-    $questioninsert->questiontextformat = 1;
-    $questioninsert->generalfeedback = ' ';
-    $questioninsert->generalfeedbackformat = 1;
-    $questioninsert->defaultmark = 1;
-    $questioninsert->penalty = 0;
-    $questioninsert->length = 1;
-    $questioninsert->hidden = 0;
-    $questioninsert->timecreated = time();
-    $questioninsert->timemodified = time();
-    $questioninsert->createdby = $USER->id;
-    $questioninsert->modifiedby = $USER->id;
-    $questioninsert->name = 'no_current_question';// Title.
-    $questioninsert->questiontext = '<p>There is no active question right now. Please wait.</p>';
-    $questioninsert->qtype = 'essay';
-    $questioninsert->stamp = $hostname .'+'. $date .'+'.quiz_random_string(6);
-    $questioninsert->version = $questioninsert->stamp;
-    $nocurrentqid = $DB->insert_record('question', $questioninsert);
-    $essayoptions = new stdClass;
-    $essayoptions->questionid = $nocurrentqid;
-    $essayoptions->responseformat = 'noinline';
-    $essayoptions->responserequired = 0;
-    $essayoptions->responsefieldlines = 0;
-    $essayoptions->attachments = 0;
-    $essayoptions->attachmentsrequired = 0;
-    $essayoptionsid = $DB->insert_record('qtype_essay_options', $essayoptions);
-    return $nocurrentqid;
-}
-
-
-/**
- * Function to generate the random string required to identify questions.
- *
- * @param int $length The length of the string to be generated.
- * @return string The random string.
- */
-function quiz_random_string($length = 15) {
-    $pool  = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-    $pool .= 'abcdefghijklmnopqrstuvwxyz';
-    $pool .= '0123456789';
-    $poollen = strlen($pool);
-    mt_srand ((double) microtime() * 1000000);
-    $string = '';
-    for ($i = 0; $i < $length; $i++) {
-        $string .= substr($pool, (mt_rand() % ($poollen)), 1);
-    }
-    return $string;
-}
-
-/**
- * This function puts the desired question in the first slot of the quiz and moves the question that was there to another slot.
- *
- * This function also checks that there is one question per page and that the questions are not shuffled.
- * @param int $quizid The id of the quiz for which this is done.
- * @param int $questionid The id of the desired question that will be put in the first slot.
- * @return string The $message string is returned if anything goes wrong.
- **/
-function quiz_add_firstquestion_to_quiz($quizid, $questionid) {
-    global $DB;
-    $message = '';// The returned message giving the result from this function.
-    $insert = true;// The boolean to let the program know if the question has to be inserted.
-    if (!($quizslots = $DB->get_records('quiz_slots', array('quizid' => $quizid)))) {
-        $message .= "Error. There are no questions for this quiz.";
-        return $message;
-    }
-    // Putting -1 in the field questionid. There should be no entry with this quizid in the quiz_current_questions table.
-    if ($DB->get_records('quiz_current_questions', array('quiz_id' => $quizid))) {
-        $message .= "\nError. This quiz is already being used by a quiz instance.";
-        return $message;
+    if ($DB->record_exists('quiz_slots', array('quizid' => $quizid, 'questionid' => $currentquestionid))) {
+        $slot = $DB->get_record('quiz_slots', array('quizid' => $quizid, 'questionid' => $currentquestionid));
+        $slotid = $slot->slot;
     } else {
-        $record3 = new stdClass();
-        $record3->quiz_id = $quizid;
-        $quiz = $DB->get_record('quiz', array('id' => $quizid));
-        $record3->course_id = $quiz->course;
-        $record3->question_id = -1;
-        $record3->ipal_is = 0;
-        $record3->timemodified = time();
+        $slotid = 0;
     }
-    $page = array();// An array to keep track of how many pages are in the quiz.
-    foreach ($quizslots as $quizslot) {
-        if ($quizslot->slot == 1) {
-            $oldfirstslot = $quizslot;
-        }
-        if ($quizslot->questionid == $questionid) {
-            // The desired question is already in the quiz. If necessary it will be moved.
-            $priordesiredquestion = $quizslot;
-            if ($quizslot->slot == 1) {
-                if (!($insertid = $DB->insert_record('quiz_current_questions', $record3))) {
-                    $message .= "\n<br />There was a problem inserting a -1 into the quiz_current_questions table.";
-                    return $message;
-                }
-                // The desired question is in the correct location. Hopefully, there is no message.
-                return $message;
-            }
-        }
-        $page[$quizslot->page] = 1;
-    }
-    if (count($page) != count($quizslots)) {
-        $message .= "There is more than one question per page. This must be fixed.";
-        return $message;
-    }
-    // Make sure that questions aren't shuffled.
-    $quizsection = $DB->get_record('quiz_sections', array('quizid' => $quizid));
-    if ($quizsection->shufflequestions > 0) {
-        $record = new stdClass();
-        $record->id = $quizsection->id;
-        $record->shufflequestions = 0;
-        $DB->update_record('quiz_sections', $record);
-        $message .= "The questions are no longer shuffled.";
-    }
-    // The questions are displayed by slot, not by page, in the quiz preview and ipal with quiz.
-    if (!(isset($oldfirstslot))) {
-        $message .= "For some reason there was no question is slot 1 for this quiz.";
-        return $message;
-    } else {
-        // Put the desired question in this slot.
-        $record1 = new stdClass();
-        $record1->id = $oldfirstslot->id;
-        $record1->slot = 1;
-        $record1->quizid = $quizid;
-        $record1->questionid = $questionid;
-        $record1->page = $oldfirstslot->page;// This is probably 1, but we don't want more than one question per page.
-        if (isset($priordesiredquestion)) {
-            // The question was already in the quiz. We now move it to slot 1.
-            $record1->requireprevious = $priordesiredquestion->requireprevious;
-            $record1->maxmark = $priordesiredquestion->maxmark;
-        } else {
-            $record1->requireprevious = 0;
-            $record1->maxmark = '0.000';
-        }
-
-        if (!($DB->update_record('quiz_slots', $record1))) {
-            $message .= " something went wrong when trying to put question with id = $questionid into slot 1";
-            return;
-        }
-        // Put oldfirstslot into the quiz.
-        $record2 = new stdClass();
-        $record2->quizid = $quizid;
-        $record2->questionid = $oldfirstslot->questionid;
-        $record2->requireprevious = $oldfirstslot->requireprevious;
-        $record2->maxmark = $oldfirstslot->maxmark;
-        if (isset($priordesiredquestion)) {
-            // Put the old first slot question where the desired question used to be.
-            $record2->id = $priordesiredquestion->id;
-            $record2->page = $priordesiredquestion->page;
-            $record2->slot = $priordesiredquestion->slot;
-            if (!($DB->update_record('quiz_slots', $record2))) {
-                $message .= " An error moving questionid = ".$oldfirstslot->questionid." to slot ".$priordesiredquestion->slot;
-                return $message;
-            }
-        } else {
-            // The old first slot question will have to be inserted into the quiz_slots table.
-            // Probably there is no slot greater than the number of questions.
-            $newslot = count($quizslots) + 1;
-            if (($DB->get_record('quiz_slots', array('quizid' => $quizid, 'slot' => $newslot))) or
-                ($DB->get_record('quiz_slots', array('quizid' => $quizid, 'page' => $newslot)))) {
-                $message .= " Somehow this quiz already had more slots or pages than questions.";
-                return $message;
-            } else {
-                $record2->slot = $newslot;
-                $record2->page = $newslot;
-                if (!($newslotid = $DB->insert_record('quiz_slots', $record2))) {
-                    $message .= " Something went wrong trying to insert the question in slot one into a new slot.";
-                    return $message;
-                }
-            }
-        }
-
-        if (!($insertid = $DB->insert_record('quiz_current_questions', $record3))) {
-            $message .= "\n<br />There was a problem inserting a -1 into the quiz_current_questions table.";
-            return $message;
-        }
-    }
-    return $message;
+    return $slotid;
 }

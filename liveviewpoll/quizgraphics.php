@@ -28,6 +28,7 @@ require_once(dirname(dirname(dirname(dirname(dirname(__FILE__))))).'/config.php'
 $quizid = optional_param('quizid', 0, PARAM_INT);
 $questionqid = optional_param('question_id', 0, PARAM_INT);
 $showstudents = optional_param('showstudents', 0, PARAM_INT);
+$norefresh = optional_param('norefresh', 0, PARAM_INT);
 $quiz = $DB->get_record('quiz', array('id' => $quizid));
 $course = $DB->get_record('course', array('id' => $quiz->course), '*', MUST_EXIST);
 $cm = get_coursemodule_from_instance('quiz', $quiz->id, $course->id, false, MUST_EXIST);
@@ -99,9 +100,11 @@ if (isset($meta)) {
     echo $meta;
 }
 echo '</head><body>';
+if (!($norefresh)) {
+    echo "\n<script src=\"javascript_teach_refresh.js\">";
+    echo "\n</script>";
+}
 
-// This is the same code used in liveviewpoll/quizgraphics.php except for the strings, $quizgraphurl and $quizgraphicurl.
-// Also, "current question is" has been removed, since it is redundant.
 foreach ($quizattempts as $quizattempt) {
     $userid = $quizattempt->userid;
     $uniqueid = $quizattempt->uniqueid;
@@ -152,6 +155,7 @@ foreach ($quizattempts as $quizattempt) {
         }
     }
 }
+
 // Starting the iframe output.
 echo get_string('responsessofar', 'quiz_liveviewpoll').count($stans)."/".count($quizattpt);
 if ($order) {

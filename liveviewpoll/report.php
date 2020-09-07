@@ -23,7 +23,7 @@
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 defined('MOODLE_INTERNAL') || die();
-require_once('locallib_liveviewpoll.php');
+require_once('locallib.php');
 /**
  * The class quiz_liveviewpoll_report supports dynamic in-class polling using the questions from the quiz.
  *
@@ -123,6 +123,10 @@ class quiz_liveviewpoll_report extends quiz_default_report {
         $id = optional_param('id', 0, PARAM_INT);
         $mode = optional_param('mode', '', PARAM_ALPHA);
         $groupid = optional_param('groupid', 0, PARAM_INT);
+        $singleqid = optional_param('singleqid', 0, PARAM_INT);
+        $showanswer = optional_param('showanswer', 0, PARAM_INT);
+        $shownames = optional_param('shownames', 1, PARAM_INT);
+        $refresht = optional_param('refresht', 1, PARAM_INT);
         $slots = array();
         $question = array();
         $users = array();
@@ -132,6 +136,7 @@ class quiz_liveviewpoll_report extends quiz_default_report {
         $this->print_header_and_tabs($cm, $course, $quiz, 'liveviewpoll');
         $context = $DB->get_record('context', array('instanceid' => $cm->id, 'contextlevel' => 70));
         $quizcontextid = $context->id;
+        // Make sure the quiz is ready for polling.
         // Make sure there is only one question per page. To do: make this better html code.
         $quizslots = $DB->get_records('quiz_slots', array('quizid' => $quiz->id));
         $slotpages = array();
@@ -144,40 +149,120 @@ class quiz_liveviewpoll_report extends quiz_default_report {
             echo "<br />You must use the back button on your broswer and correct this before using this quiz for in-class polling.";
             return;
         }
-        if ($DB->record_exists('quiz_current_questions', array('quiz_id' => $quiz->id))) {
-            // This quiz is already set up for polling.
-            // Make sure this is being used for in-class polling. Pages should not be shuffled.
-            $quizsections = $DB->get_record('quiz_sections', array('quizid' => $quiz->id));
-            if ($quizsections->shufflequestions <> 0) {
-                $record = new stdClass();
-                $record->id = $quizsections->id;
-                $record->shufflequestions = 0;
-                $DB->update_record('quiz_sections', $record);
-            }
-            quiz_display_instructor_interface($cm->id, $quiz->id);
-        } else {
-            $startpoll = optional_param('startpoll', 0, PARAM_INT);
-            if ($startpoll) {
-                addrefreshscript($quiz->id);
-                $record = new stdClass();
-                $record->id = '';
-                $record->course = $quiz->course;
-                $record->cmid = $cm->id;
-                $record->quiz_id = $quiz->id;
-                if ($groupid > 0) {
-                    $record->$groupid;
-                }
-                $record->question_id = -1;
-                $record->timemodified = time();
-                $lastinsertid = $DB->insert_record('quiz_current_questions', $record);
-                quiz_display_instructor_interface($cm->id, $quiz->id);
+        $groupmode = groups_get_activity_groupmode($cm, $course);
+        $contextmodule = context_module::instance($cm->id);
+        // The array of hidden values is hidden[].
+        $hidden = array();
+        $hidden['id'] = $id;
+        $hidden['mode'] = $mode;
+        $hidden['groupid'] = $groupid;
+        $hidden['singleqid'] = $singleqid;
+        $hidden['showanswer'] = $showanswer;
+        $hidden['refresht'] = $refresht;
+        $options = array('showanswer', 'refresht');
+        foreach ($options as $option) {
+            if ($changeoption) {
+                $_SESSION[$option] = $hidden[$option];
             } else {
-                echo get_string('quiznotsetforpoll', 'quiz_liveviewpoll');
-                echo "\n<br /><a href='";
-                echo $CFG->wwwroot."/mod/quiz/report.php?id=".$cm->id."&mode=liveviewpoll&startpoll=1'>";
-                echo get_string('preparequizforpoll', 'quiz_liveviewpoll');
-                echo "\n</a>";
-                echo get_string('preparequizexplanation', 'quiz_liveviewpoll');
+                if (isset($_SESSION[$option])) {
+                    $$option = $_SESSION[$option];
+                    $hidden[$option] = $_SESSION[$option];
+                }
+            }
+        }
+        $showresponses = false;
+        if ($groupmode == 1) {
+            if ($groupid == 0) {
+                // If groupmode = 1, a group has to be selected.
+                $showresponses = false;
+                echo get_string('pickgroup', 'quiz_liveviewpoll');
+            } else if ($groupid > 0) {
+                if ($DB->get_record('groups_members', array('groupid' => $groupid, 'userid' => $USER->id))) {
+                    // The teacher is a member of this group.
+                    $showresponses = true;
+                } else if (has_capability('moodle/site:accessallgroups', $contextmodule)) {
+                    // The teacher can see all groups.
+                    $showresponses = true;
+                } else {
+                    // Teacher has picked a group but is not a member of this group.
+                    $showresponses = false;
+                    echo get_string('notmember', 'quiz_liveviewpoll');
+                }
+            }
+        } else {
+            $showresponses = true;
+        }
+
+        // Put options here.
+        if ($showresponses) {
+            $hidden = option_form($id, $quizid, $groupid, $mode, $hidden);
+        }
+        // Find out if there may be groups. If so, allow the teacher to choose a group.
+        $canaccess = has_capability('moodle/site:accessallgroups', $contextmodule);
+        $geturl = $CFG->wwwroot.'/mod/quiz/report.php';
+        $courseid = $course->id;
+        if ($groupmode) {
+            liveviewpoll_group_dropdownmenu($courseid, $geturl, $canaccess, $hidden);
+        }
+
+        if ($showresponses) {
+            if ($DB->record_exists('quiz_current_questions', array('quiz_id' => $quiz->id))) {
+                // This quiz is already set up for polling.
+                // Make sure this is being used for in-class polling. Pages should not be shuffled.
+                $quizsections = $DB->get_record('quiz_sections', array('quizid' => $quiz->id));
+                if ($quizsections->shufflequestions <> 0) {
+                    $record = new stdClass();
+                    $record->id = $quizsections->id;
+                    $record->shufflequestions = 0;
+                    $DB->update_record('quiz_sections', $record);
+                }
+                if ($DB->record_exists('quiz_current_questions', array('quiz_id' => $quiz->id, 'groupid' => $groupid))) {
+                    // This quiz is ready for polling with this group.
+                    // This function will also send a question and clear a question.
+                    quiz_display_instructor_interface($cm->id, $quiz->id, $groupid, $showanswer);
+                } else {
+                    // Create a new row in the quiz_current_questions table for this group.
+                    $record = new stdClass();
+                    $record->id = '';
+                    $record->course = $quiz->course;
+                    $record->cmid = $cm->id;
+                    $record->quiz_id = $quiz->id;
+                    if ($groupid > 0) {
+                        $record->groupid = $groupid;
+                        $record->groupmembers = ','.implode(',', get_userids_for_group($groupid)).',';
+                    } else {
+                        $record->groupid = 0;
+                        $record->groupmembers = '';
+                    }
+                    $record->question_id = -1;
+                    $record->timemodified = time();
+                    $lastinsertid = $DB->insert_record('quiz_current_questions', $record);
+                    quiz_display_instructor_interface($cm->id, $quiz->id, $groupid, $showanswer);
+                }
+            } else {
+                $startpoll = optional_param('startpoll', 0, PARAM_INT);
+                if ($startpoll) {
+                    addrefreshscript($quiz->id);
+                    $record = new stdClass();
+                    $record->id = '';
+                    $record->course = $quiz->course;
+                    $record->cmid = $cm->id;
+                    $record->quiz_id = $quiz->id;
+                    if ($groupid > 0) {
+                        $record->$groupid;
+                    }
+                    $record->question_id = -1;
+                    $record->timemodified = time();
+                    $lastinsertid = $DB->insert_record('quiz_current_questions', $record);
+                    quiz_display_instructor_interface($cm->id, $quiz->id, $groupid, $showanswer);
+                } else {
+                    echo get_string('quiznotsetforpoll', 'quiz_liveviewpoll');
+                    echo "\n<br /><a href='";
+                    echo $CFG->wwwroot."/mod/quiz/report.php?id=".$cm->id."&mode=liveviewpoll&startpoll=1'>";
+                    echo get_string('preparequizforpoll', 'quiz_liveviewpoll');
+                    echo "\n</a>";
+                    echo get_string('preparequizexplanation', 'quiz_liveviewpoll');
+                }
             }
         }
         return true;

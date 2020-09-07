@@ -22,19 +22,27 @@
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+$string['allgroups'] = 'All groups';
 $string['changequestions'] = 'Add/Change Questions';
+$string['choosegroup'] = '<b>Choose a group</b>';
+$string['clicktodisplay'] = 'Click to display options';
+$string['clicktohide'] = 'Click to hide options';
+$string['correctanswer'] = 'Display correct answer';
 $string['currentquestionis'] = 'The current question is: ';
 $string['graph'] = 'Graph';
 $string['graphtooltip'] = 'Graph of Question Answers';
 $string['here'] = 'here';
 $string['hidenames'] = 'Hide student names.';
 $string['liveviewpoll'] = 'Live Polling';
+$string['no'] = 'No';
 $string['nocurrentquestion'] = 'No question has been sent.';
 $string['nocurrentqpage'] = 'No Current Question Page';
 $string['noqsent'] = "<br />No question has been sent yet.
     Please wait until the teacher has sent a question and then this page will refresh automatically.
     \n<br />If the page does not refresh after a new question has been sent, please click ";
+$string['notmember'] = "<b>You are not a member of this group.</b>\n<br />";
 $string['opennewwindow'] = 'Open a new window for the graph.';
+$string['pickgroup'] = '<b>The group setting for this quiz is seperate groups. You must pick a group.</b> ';
 $string['pleaseclick'] = 'Please click ';
 $string['pluginname'] = 'Live Polling';
 $string['preparequizforpoll'] = 'Please click here to prepare this quiz for in-class polling.';
@@ -49,10 +57,15 @@ $string['quizname'] = 'Quiz name';
 $string['quiznotsetforpoll'] = "\n<br />This quiz has not been set up for in-class polling yet.";
 $string['quizspreadsheet'] = 'Quiz Spreadsheet';
 $string['toreturn'] = ' to return to the course.';
+$string['responses'] = '<b>Responses</b>';
 $string['responsessofar'] = 'Responses so far: ';
+$string['rightanswer'] = ' <b>Right answer:</b> ';
+$string['rightansweressay'] = 'This is an essay question.';
 $string['sendquestion'] = 'Send Question';
 $string['shownames'] = 'Show student names.';
 $string['startpolling'] = 'Start Polling';
 $string['stoppolling'] = 'Send No Question';
+$string['submitoptionchanges'] = 'Apply changes to options';
 $string['totalresponses'] = 'Total responses';
-
+$string['whichgroups'] = '<b>Which group do you want to see?</b> ';
+$string['yes'] = 'Yes';

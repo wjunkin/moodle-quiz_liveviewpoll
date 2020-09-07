@@ -29,6 +29,7 @@ $quizid = optional_param('quizid', 0, PARAM_INT);
 $questionqid = optional_param('question_id', 0, PARAM_INT);
 $showstudents = optional_param('showstudents', 0, PARAM_INT);
 $norefresh = optional_param('norefresh', 0, PARAM_INT);
+$groupid = optional_param('groupid', 0, PARAM_INT);
 $quiz = $DB->get_record('quiz', array('id' => $quizid));
 $course = $DB->get_record('course', array('id' => $quiz->course), '*', MUST_EXIST);
 $cm = get_coursemodule_from_instance('quiz', $quiz->id, $course->id, false, MUST_EXIST);
@@ -46,7 +47,12 @@ if ($questionqid) {
     $questiontext = $DB->get_record('question', array('id' => $questionid));
 
 } else {
-    $question = $DB->get_record('quiz_current_questions', array('quiz_id' => $quizid));
+    if ($groupid > 0) {
+        $question = $DB->get_record('quiz_current_questions', array('quiz_id' => $quizid, 'groupid' => $groupid));
+        $users = explode(',', $question->groupmembers);
+    } else {
+        $question = $DB->get_record('quiz_current_questions', array('quiz_id' => $quizid));
+    }
     $questionid = $question->question_id;
     $questiontext = $DB->get_record('question', array('id' => $questionid));
     $timesent = $question->timemodified;
@@ -90,9 +96,18 @@ $quizattpt = array();
 // An array of all question answers after the question was sent, one per user.
 $quizattempts = array();
 foreach ($allquizattempts as $attempt) {
-    $quizattpt[$attempt->userid] = $attempt->id;
-    if ($attempt->timemodified > $timesent) {
-        $quizattempts[$attempt->userid] = $attempt;
+    if ($groupid > 0) {
+        if (in_array($attempt->userid, $users)) {
+            $quizattpt[$attempt->userid] = $attempt->id;
+            if ($attempt->timemodified > $timesent) {
+                $quizattempts[$attempt->userid] = $attempt;
+            }
+        }
+    } else {
+        $quizattpt[$attempt->userid] = $attempt->id;
+        if ($attempt->timemodified > $timesent) {
+            $quizattempts[$attempt->userid] = $attempt;
+        }
     }
 }
 echo '<html><head>';

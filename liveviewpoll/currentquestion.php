@@ -34,33 +34,34 @@ defined('MOODLE_INTERNAL') || die();
 // Therefore it does not take time to check on login and
 // It uses the inval($_GET['attempt']) which is about 40 times faster than optional_param('attempt', 0, PARAM_INT).
 // It only returns the cmid number for the current question for a specific quiz id.
+$questionid = 0;
 $attemptid = intval($_GET['attempt']);
 $cmid = intval($_GET['cmid']);
+$userid = $_SESSION['USER']->id;
 if ($cmid > 0) {
     if ($count = $DB->count_records('quiz_current_questions', array('cmid' => $cmid))) {
         if ($count == 1) {
             $question = $DB->get_record('quiz_current_questions', array('cmid' => $cmid));
-            echo $question->question_id;
+            if ($question->groupid == 0) {
+                // No groups.
+                $questionid = $question->question_id;
+            } else if (preg_match("/,$userid,/", $question->groupmembers)) {
+                $questionid = $question->question_id;
+            }
         } else if ($count > 1) {
             $currentquestions = $DB->get_records('quiz_current_questions', array('cmid' => $cmid));
-            $userid = $_SESSION['USER']->id;
-            $questionid = 0;
             foreach ($currentquestions as $currentquestion) {
                 if (preg_match("/,$userid,/", $currentquestion->groupmembers)) {
                     $questionid = $currentquestion->question_id;
                 }
             }
-            echo $questionid;
-        } else {
-            echo 0;
         }
     }
 } else {
     $attempt = $DB->get_record('quiz_attempts', array('id' => $attemptid));
     if ($DB->record_exists('quiz_current_questions', array('quiz_id' => $attempt->quiz))) {
         $question = $DB->get_record('quiz_current_questions', array('quiz_id' => $attempt->quiz));
-        echo $question->question_id;
-    } else {
-        echo 0;
+        $qustionid = $question->question_id;
     }
 }
+echo $questionid;

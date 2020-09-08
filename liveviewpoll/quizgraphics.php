@@ -39,7 +39,6 @@ if (!(has_capability('mod/quiz:manage', $contextinstance))) {
     echo "\n<br />You must be authorized to access this site";
     exit;
 }
-
 // Usually only want answers after the question was sent, so need to find out when the question was sent.
 if ($questionqid) {
     $timesent = 0;
@@ -198,10 +197,10 @@ if ($order) {
     echo "\n<br />";
     $quizgraphicsurl = $CFG->wwwroot."/mod/quiz/report/liveviewpoll/quizgraphics.php";
     if ($showstudents) {
-        echo "<a href='".$quizgraphicsurl."?quizid=$quizid&showstudents=0'>";
+        echo "<a href='".$quizgraphicsurl."?quizid=$quizid&showstudents=0&groupid=$groupid&questionid=$questionid'>";
         echo get_string('hidenames', 'quiz_liveviewpoll')."</a>";
     } else {
-        echo "<a href='".$quizgraphicsurl."?quizid=$quizid&showstudents=1'>";
+        echo "<a href='".$quizgraphicsurl."?quizid=$quizid&showstudents=1&groupid=$groupid&questionid=$questionid'>";
         echo get_string('shownames', 'quiz_liveviewpoll')."</a>";
     }
     foreach ($stans as $usr => $textanswer) {

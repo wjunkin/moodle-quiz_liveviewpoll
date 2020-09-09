@@ -11,7 +11,7 @@
         <FIELD NAME="cmid" TYPE="int" LENGTH="10" NOTNULL="true" UNSIGNED="true" DEFAULT="0" SEQUENCE="false" PREVIOUS="course" NEXT="quiz_id"/>
         <FIELD NAME="quiz_id" TYPE="int" LENGTH="10" NOTNULL="true" UNSIGNED="true" DEFAULT="0" SEQUENCE="false" PREVIOUS="cmid" NEXT="groupid"/>
         <FIELD NAME="groupid" TYPE="int" LENGTH="11" NOTNULL="true" UNSIGNED="true" DEFAULT="0" SEQUENCE="false" PREVIOUS="quiz_id" NEXT="groupmembers"/>
-        <FIELD NAME="groupmembers" TYPE="char" LENGTH="1333" NOTNULL="false" DEFAULT="0" SEQUENCE="false" COMMENT="Group userids, separated by commas" PREVIOUS="groupid" NEXT="question_id"/>
+        <FIELD NAME="groupmembers" TYPE="text" NOTNULL="true" SEQUENCE="false" COMMENT="Group userids, separated by commas" PREVIOUS="groupid" NEXT="question_id"/>
         <FIELD NAME="question_id" TYPE="int" LENGTH="11" NOTNULL="true" UNSIGNED="true" DEFAULT="0" SEQUENCE="false" PREVIOUS="groupmembers" NEXT="timemodified"/>
         <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" UNSIGNED="true" DEFAULT="0" SEQUENCE="false" PREVIOUS="question_id"/>
       </FIELDS>

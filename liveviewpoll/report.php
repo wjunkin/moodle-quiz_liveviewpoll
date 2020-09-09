@@ -120,6 +120,7 @@ class quiz_liveviewpoll_report extends quiz_default_report {
      */
     public function display($quiz, $cm, $course) {
         global $OUTPUT, $DB, $CFG;
+        $changeoption = optional_param('changeoption', 0, PARAM_INT);
         $id = optional_param('id', 0, PARAM_INT);
         $mode = optional_param('mode', '', PARAM_ALPHA);
         $groupid = optional_param('groupid', 0, PARAM_INT);
@@ -219,7 +220,7 @@ class quiz_liveviewpoll_report extends quiz_default_report {
                 if ($DB->record_exists('quiz_current_questions', array('quiz_id' => $quiz->id, 'groupid' => $groupid))) {
                     // This quiz is ready for polling with this group.
                     // This function will also send a question and clear a question.
-                    quiz_display_instructor_interface($cm->id, $quiz->id, $groupid, $showanswer);
+                    quiz_display_instructor_interface($cm->id, $quiz->id, $canaccess, $groupid, $showanswer);
                 } else {
                     // Create a new row in the quiz_current_questions table for this group.
                     $record = new stdClass();
@@ -237,7 +238,7 @@ class quiz_liveviewpoll_report extends quiz_default_report {
                     $record->question_id = -1;
                     $record->timemodified = time();
                     $lastinsertid = $DB->insert_record('quiz_current_questions', $record);
-                    quiz_display_instructor_interface($cm->id, $quiz->id, $groupid, $showanswer);
+                    quiz_display_instructor_interface($cm->id, $quiz->id, $canaccess, $groupid, $showanswer);
                 }
             } else {
                 $startpoll = optional_param('startpoll', 0, PARAM_INT);
@@ -254,7 +255,7 @@ class quiz_liveviewpoll_report extends quiz_default_report {
                     $record->question_id = -1;
                     $record->timemodified = time();
                     $lastinsertid = $DB->insert_record('quiz_current_questions', $record);
-                    quiz_display_instructor_interface($cm->id, $quiz->id, $groupid, $showanswer);
+                    quiz_display_instructor_interface($cm->id, $quiz->id, $canaccess, $groupid, $showanswer);
                 } else {
                     echo get_string('quiznotsetforpoll', 'quiz_liveviewpoll');
                     echo "\n<br /><a href='";

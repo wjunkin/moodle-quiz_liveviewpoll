@@ -37,7 +37,7 @@ defined('MOODLE_INTERNAL') || die();
  * @param int $groupid The id of the group to which it is to be sent.
  * @param int $showanswer The value to show the correct answer (1) or not (0).
  */
-function quiz_display_instructor_interface($cmid, $quizid, $groupid, $showanswer) {
+function quiz_display_instructor_interface($cmid, $quizid, $canaccess, $groupid, $showanswer) {
     global $DB;
     global $CFG;
 
@@ -125,6 +125,9 @@ function quiz_send_question($quizid, $sendquestionid, $groupid) {
         if ($groupid > 0) {
             $record->groupid = $groupid;
             $record->groupmembers = ','.implode(',', get_userids_for_group($groupid)).',';
+        } else {
+            $record->groupid = 0;
+            $record->groupmembers = '';
         }
         $record->question_id = $myquestionid;
         $record->timemodified = time();

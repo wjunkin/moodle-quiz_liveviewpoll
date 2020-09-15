@@ -197,7 +197,7 @@ class quiz_liveviewpoll_report extends quiz_default_report {
 
         // Put options here.
         if ($showresponses) {
-            $hidden = option_form($id, $quizid, $groupid, $mode, $hidden);
+            $hidden = option_form($id, $quizid, $groupid, $mode, $hidden, $refresht);
         }
         // Find out if there may be groups. If so, allow the teacher to choose a group.
         $canaccess = has_capability('moodle/site:accessallgroups', $contextmodule);

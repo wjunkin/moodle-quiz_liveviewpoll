@@ -119,8 +119,6 @@ class quiz_liveviewpoll_report extends quiz_default_report {
      */
     public function display($quiz, $cm, $course) {
         global $OUTPUT, $DB, $CFG, $USER;
-        $locallibpath = $CFG->dirroot.'/mod/quiz/report/liveviewpoll/locallib.php';
-        require_once($locallibpath);
         $changeoption = optional_param('changeoption', 0, PARAM_INT);
         $id = optional_param('id', 0, PARAM_INT);
         $mode = optional_param('mode', '', PARAM_ALPHA);
@@ -135,6 +133,8 @@ class quiz_liveviewpoll_report extends quiz_default_report {
         $quizid = $quiz->id;
         $answer = '';
         $graphicshashurl = '';
+        $locallibpath = $CFG->dirroot.'/mod/quiz/report/liveviewpoll/locallib.php';
+        require_once($locallibpath);
         $this->print_header_and_tabs($cm, $course, $quiz, 'liveviewpoll');
         $context = $DB->get_record('context', array('instanceid' => $cm->id, 'contextlevel' => 70));
         $quizcontextid = $context->id;
@@ -251,7 +251,11 @@ class quiz_liveviewpoll_report extends quiz_default_report {
                     $record->cmid = $cm->id;
                     $record->quiz_id = $quiz->id;
                     if ($groupid > 0) {
-                        $record->$groupid;
+                        $record->groupid = $groupid;
+                        $record->groupmembers = ','.implode(',', get_userids_for_group($groupid)).',';
+                    } else {
+                        $record->groupid = 0;
+                        $record->groupmembers = '';
                     }
                     $record->question_id = -1;
                     $record->timemodified = time();

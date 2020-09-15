@@ -23,7 +23,6 @@
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 defined('MOODLE_INTERNAL') || die();
-require_once('locallib.php');
 /**
  * The class quiz_liveviewpoll_report supports dynamic in-class polling using the questions from the quiz.
  *
@@ -119,7 +118,9 @@ class quiz_liveviewpoll_report extends quiz_default_report {
      * @return bool True if successful.
      */
     public function display($quiz, $cm, $course) {
-        global $OUTPUT, $DB, $CFG;
+        global $OUTPUT, $DB, $CFG, $USER;
+        $locallibpath = $CFG->dirroot.'/mod/quiz/report/liveviewpoll/locallib.php';
+        require_once($locallibpath);
         $changeoption = optional_param('changeoption', 0, PARAM_INT);
         $id = optional_param('id', 0, PARAM_INT);
         $mode = optional_param('mode', '', PARAM_ALPHA);

@@ -14,7 +14,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * JavaScript to return student to quiz when a question is sent in quiz_report_liveviewpoll module.
+ * JavaScript to refresh teacher page in quiz_report_liveviewpoll module when there is a new response.
  *
  * @package    quiz_liveviewpoll
  * @copyright  2020 onwards William F Junkin  <junkinwf@eckerd.edu>
@@ -23,7 +23,7 @@
 var http = false;
 var x = "";
 var myCount = 0;
-var currentquestionurl = "currentquestion.php" + window.location.search;
+var graphicshashurl = "graphicshash.php" + window.location.search;
 if(navigator.appName == "Microsoft Internet Explorer") {
     http = new ActiveXObject("Microsoft.XMLHTTP")
 } else {
@@ -34,18 +34,24 @@ function replace() {
     if(myCount < 360) {
        var t=setTimeout("replace()",10000);
         myCount++;
+    } else {
+       myFunction();
     }
-    http.open("GET", currentquestionurl, true);
+    http.open("GET", graphicshashurl, true);
     http.onreadystatechange = function() {
         if(http.readyState == 4) {
-            if(x > 0 ){
-                window.location = document.referrer;
+            if(http.responseText != x && myCount > 1 && http.responseText > 0){
+                window.location = window.location.href + '&x';
             }
             x = http.responseText;
         }
     }
     http.send(null);
-    myCount++;
 }
 
 replace();
+function myFunction() {
+    document.getElementById('blink1').setAttribute("class", "blinking");
+    var bl = document.getElementById('blink1');
+    bl.style.display = "block";
+}

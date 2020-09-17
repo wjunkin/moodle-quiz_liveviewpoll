@@ -114,8 +114,30 @@ if (isset($meta)) {
     echo $meta;
 }
 echo '</head><body>';
+
 if (!($norefresh)) {
-    echo "\n<script src=\"javascript_teach_refresh.js\">";
+    // Put in the warning to refresh the page after 2 hours of checking refresh.
+    echo "\n<div id=\"blink1\" class=\"blinkhidden\" style=\"display:none;\">";
+    $iframeurl = $CFG->wwwroot."/mod/quiz/report/liveviewpoll/quizgraphics.php";
+    echo "\n<form action='$iframeurl'><input type='submit' value='Click to Refresh Data' class=\"blinking\">";
+    echo "\n<input type='hidden' name='quizid' value='$quizid'>";
+    echo "\n<input type='hidden' name='groupid' value='$groupid'>";
+    echo "</form>";    
+    echo "\n</div>";
+    echo "\n<style>";
+    echo "\n .blinking{";
+    echo "\n    animation:blinkingText 0.8s infinite;";
+    echo "\n}";
+    echo ' @keyframes blinkingText{';
+    echo "\n    0%{     color: red;    }";
+    echo "\n    50%{    color: transparent; }";
+    echo "\n    100%{   color: red;    }";
+    echo "\n}";
+    echo "\n .blinkhidden{";
+    echo "\n    color: transparent;";
+    echo "\n}";
+    echo "\n</style>";
+    echo "\n<script src=\"javascript_teach_refresh1.js\">";
     echo "\n</script>";
 }
 

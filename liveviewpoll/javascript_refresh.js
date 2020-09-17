@@ -32,7 +32,12 @@ if(navigator.appName == "Microsoft Internet Explorer") {
 }
 
 function replace() {
-    var t = setTimeout("replace()", 3000);
+    if(myCount < 360) {
+       var t=setTimeout("replace()",10000);
+        myCount++;
+    } else {
+        window.location.replace(nocurrentquestionurl);
+    }
     http.open("GET", currentquestionurl, true);
     http.onreadystatechange = function() {
         if(http.readyState == 4) {

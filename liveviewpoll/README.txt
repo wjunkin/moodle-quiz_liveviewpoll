@@ -19,3 +19,4 @@ After installation, teachers use it by clicking on the "Live Poll" option in the
 This plugin handles groups correctly. 
 If a student starts the first attempt of the quiz after a question has been sent,
  the student will not see the correct question until the next question is sent. 
+Changes for v2.5. No refresh goes more than 1 hour.

@@ -34,7 +34,7 @@ defined('MOODLE_INTERNAL') || die();
  *
  * @param int $cmid The id for teh course module for this quiz instance.
  * @param int $quizid The id of this quiz instance.
-* @param int $canaccess Whether the user can (1) or cannot (0) access all groups.
+ * @param int $canaccess Whether the user can (1) or cannot (0) access all groups.
  * @param int $groupid The id of the group to which it is to be sent.
  * @param int $showanswer The value to show the correct answer (1) or not (0).
  */

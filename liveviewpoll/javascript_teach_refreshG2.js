@@ -37,7 +37,7 @@ function replace() {
         var t = setTimeout("replace()",10000);
         myCount++;
     } else {
-       myFunction();
+        myFunction();
     }
     http.open("GET", graphicshashurl, true);
     http.onreadystatechange = function() {

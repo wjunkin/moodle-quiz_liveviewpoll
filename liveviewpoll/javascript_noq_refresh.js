@@ -36,7 +36,7 @@ if(navigator.appName == "Microsoft Internet Explorer") {
 function replace() {
     var milliseconds_since_start = new Date().valueOf() - start_time;
     if(milliseconds_since_start < 3600000) {
-        var t = setTimeout("replace()",10000);
+        var t = setTimeout("replace()",3000);
         myCount++;
     } else {
         window.location.replace(nocurrentquestionurl);

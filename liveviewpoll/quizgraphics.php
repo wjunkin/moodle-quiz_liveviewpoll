@@ -33,6 +33,7 @@ $groupid = optional_param('groupid', 0, PARAM_INT);
 $quiz = $DB->get_record('quiz', array('id' => $quizid));
 $course = $DB->get_record('course', array('id' => $quiz->course), '*', MUST_EXIST);
 $cm = get_coursemodule_from_instance('quiz', $quiz->id, $course->id, false, MUST_EXIST);
+$cmid = $cm->id;
 require_login($course, true, $cm);
 $contextinstance = context_module::instance($cm->id);
 if (!(has_capability('mod/quiz:manage', $contextinstance))) {
@@ -119,10 +120,11 @@ if (!($norefresh)) {
     // Put in the warning to refresh the page after 2 hours of checking refresh.
     echo "\n<div id=\"blink1\" class=\"blinkhidden\" style=\"display:none;\">";
     $iframeurl = $CFG->wwwroot."/mod/quiz/report/liveviewpoll/quizgraphics.php";
-    echo "\n<form action='$iframeurl'><input type='submit' value='Click to Refresh Data' class=\"blinking\">";
+    echo "\n<form action='$iframeurl' method='get'><input type='submit' value='Click to Refresh Data' class=\"blinking\">";
     echo "\n<input type='hidden' name='quizid' value='$quizid'>";
     echo "\n<input type='hidden' name='groupid' value='$groupid'>";
-    echo "</form>";    
+    echo "\n<input type='hidden' name='id' value='$cmid'>";
+    echo "</form>";
     echo "\n</div>";
     echo "\n<style>";
     echo "\n .blinking{";
@@ -137,7 +139,7 @@ if (!($norefresh)) {
     echo "\n    color: transparent;";
     echo "\n}";
     echo "\n</style>";
-    echo "\n<script src=\"javascript_teach_refresh1.js\">";
+    echo "\n<script src=\"javascript_teach_refreshG2.js\">";
     echo "\n</script>";
 }
 

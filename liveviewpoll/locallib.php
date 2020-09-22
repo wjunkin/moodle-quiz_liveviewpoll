@@ -34,6 +34,7 @@ defined('MOODLE_INTERNAL') || die();
  *
  * @param int $cmid The id for teh course module for this quiz instance.
  * @param int $quizid The id of this quiz instance.
+* @param int $canaccess Whether the user can (1) or cannot (0) access all groups.
  * @param int $groupid The id of the group to which it is to be sent.
  * @param int $showanswer The value to show the correct answer (1) or not (0).
  */
@@ -147,7 +148,9 @@ function quiz_send_question($quizid, $sendquestionid, $groupid) {
 function quiz_clear_question($quizid, $groupid) {
     global $DB;
     // We don't have to change the layout becuase the javascript will send the students to the no question page.
+    $timemodified = time();
     $DB->set_field('quiz_current_questions', 'question_id', '-1', array('quiz_id' => $quizid, 'groupid' => $groupid));
+    $DB->set_field('quiz_current_questions', 'timemodified', $timemodified, array('quiz_id' => $quizid, 'groupid' => $groupid));
 }
 
 /**
@@ -244,8 +247,9 @@ function quiz_instructor_buttons($quizid, $groupid) {
  * @param int $groupid The id of the group to which it is to be sent.
  * @param string $mode The string, liveviewpoll, telling reports that this is the Live View Poll module.
  * @param int $hidden The value to show, 1, or hide, 0, the students' names.
+ * @param int $refresht The value (in 10 seconds) for refreshing the display.
  */
-function option_form($id, $quizid, $groupid, $mode, $hidden) {
+function option_form($id, $quizid, $groupid, $mode, $hidden, $refresht) {
     global $DB, $CFG;
     // Script to hide or display the option form.
     echo "\n<script>";

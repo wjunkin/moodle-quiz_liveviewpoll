@@ -22,8 +22,11 @@
  */
 var http = false;
 var x = "";
+// Call at the beggining to save the start time.
+var start_time = new Date();
 var myCount = 0;
 var currentquestionurl = "currentquestion.php" + window.location.search;
+var nocurrentquestionurl = "nocurrentquestion.php" + window.location.search;
 if(navigator.appName == "Microsoft Internet Explorer") {
     http = new ActiveXObject("Microsoft.XMLHTTP")
 } else {
@@ -31,9 +34,12 @@ if(navigator.appName == "Microsoft Internet Explorer") {
 }
 
 function replace() {
-    if(myCount < 360) {
-       var t=setTimeout("replace()",10000);
+    var milliseconds_since_start = new Date().valueOf() - start_time;
+    if(milliseconds_since_start < 3600000) {
+        var t = setTimeout("replace()",10000);
         myCount++;
+    } else {
+        window.location.replace(nocurrentquestionurl);
     }
     http.open("GET", currentquestionurl, true);
     http.onreadystatechange = function() {

@@ -55,9 +55,13 @@ $string['noqsent'] = "<br />No question has been sent yet.
 $string['noqforhour'] = "It looks like the teacher has paused polling and has not sent a question for
     more than an hour. If you need to return to the quiz, please click ";
 $string['notremovedfromquestions'] = "\n<br />The in-class polling feature has not been removed from the following questions because they are being used by others:";
-    $string['notmember'] = "<b>You are not a member of this group.</b>\n<br />";
+$string['notmember'] = "<b>You are not a member of this group.</b>\n<br />";
 $string['notstudent'] = "It doesn't look like you are a student taking this quiz.";
 $string['opennewwindow'] = 'Open a new window for the graph.';
+$string['onepageper1'] = "In-class polling requires one page per question.\n<br />You have ";
+$string['onepageper2'] = " questions and only ";
+$string['onepageper3'] = " pages.\n<br />You must use the back button on your broswer and correct this before
+    using this quiz for in-class polling.";
 $string['pickgroup'] = '<b>The group setting for this quiz is seperate groups. You must pick a group.</b> ';
 $string['pleaseclick'] = 'Please click ';
 $string['pluginname'] = 'Live Polling';
@@ -78,9 +82,11 @@ $string['quizzesrestored'] = "\n<br />The following quizzes have been restored t
  and can no longer be used with the Live Polling module until the teacher goes to the quiz->report->Live Polling site
  and makes them ready for polling again.";
 $string['refreshpage'] = 'Refresh Page!';
+$string['removepollinglink'] = 'Click here to remove polling features from quiz.';
 $string['responses'] = '<b>Responses</b>';
 $string['responsessofar'] = 'Responses so far: ';
 $string['restorequizzes'] = 'Restore quizzes';
+$string['returntocourse'] = 'Return to course.';
 $string['removedfromquestions'] = "\n<br />The in-class polling feature has been removed from the following questions:";
 $string['rightanswer'] = ' <b>Right answer:</b> ';
 $string['rightansweressay'] = 'This is an essay question.';

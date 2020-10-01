@@ -24,9 +24,9 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version   = 2020100100;
+$plugin->version   = 2020100101;
 $plugin->requires  = 2017042000;
 $plugin->cron      = 18000;
 $plugin->component = 'quiz_liveviewpoll';
 $plugin->maturity = MATURITY_STABLE;
-$plugin->release   = 'v2.5.2 (2020100100) for Moodle 3.2+';
+$plugin->release   = 'v2.5.3 (2020100101) for Moodle 3.2+';

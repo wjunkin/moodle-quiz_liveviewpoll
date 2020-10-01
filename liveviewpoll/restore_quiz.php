@@ -36,12 +36,14 @@ $context = context_module::instance($cm->id);
 require_capability('mod/quiz:view', $context);
 echo "<html><head><title>".get_string('restorequizzes', 'quiz_liveviewpoll')."</title></head><body>";
 // Restore the checked quizzes and remove javascript from the questions.
+echo "\n<br /><a href=\"".$CFG->wwwroot.'/course/view.php?id='.$cm->course."\">";
+echo get_string('returntocourse', 'quiz_liveviewpoll')."</a>";
 $checked = array();
 $checked = optional_param_array('pquiz', null, PARAM_INT);
 $checkedquestions = array(); // The array (indexed by ids of all the questions in checked quizzes.
 $checkedqrestored = array(); // The array (indexed by ids) of all the questions restored in checked quizzes.
 $checkedqleft = array(); // The array (indexed by ids) of all the quesitons in checked quizzes but not restored.
-if (count($checked) > 0) {
+if ($checked <> null) {
     echo get_string('quizzesrestored', 'quiz_liveviewpoll');
     echo get_string('pollremoved',  'quiz_liveviewpoll');
     foreach ($checked as $key => $value) {

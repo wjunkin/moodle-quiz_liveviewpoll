@@ -146,11 +146,12 @@ class quiz_liveviewpoll_report extends quiz_default_report {
             $slotpages[$quizslot->page] = 1;
         }
         if (count($slotpages) != count($quizslots)) {
-            echo "In-class polling requires one page per question.";
-            echo "\n<br />You have ".count($quizslots)." questions and only ".count($slotpages)." pages.";
-            echo "<br />You must use the back button on your broswer and correct this before using this quiz for in-class polling.";
+            echo get_string('onepageper1', 'quiz_liveviewpoll').count($quizslots).
+            get_string('onepageper2', 'quiz_liveviewpoll').count($slotpages).get_string('onepageper3', 'quiz_liveviewpoll');
             return;
         }
+        echo "<a href=\"".$CFG->wwwroot."/mod/quiz/report/liveviewpoll/restore_quiz.php?cmid=$id\">";
+        echo get_string('removepollinglink', 'quiz_liveviewpoll')."</a> ";
         $groupmode = groups_get_activity_groupmode($cm, $course);
         $contextmodule = context_module::instance($cm->id);
         // The array of hidden values is hidden[].
@@ -264,7 +265,7 @@ class quiz_liveviewpoll_report extends quiz_default_report {
                 } else {
                     echo get_string('quiznotsetforpoll', 'quiz_liveviewpoll');
                     echo "\n<br /><a href='";
-                    echo $CFG->wwwroot."/mod/quiz/report.php?id=".$cm->id."&mode=liveviewpoll&startpoll=1'>";
+                    echo $CFG->wwwroot."/mod/quiz/report.php?id=".$cm->id."&mode=liveviewpoll&groupid=$groupid&startpoll=1'>";
                     echo get_string('preparequizforpoll', 'quiz_liveviewpoll');
                     echo "\n</a>";
                     echo get_string('preparequizexplanation', 'quiz_liveviewpoll');

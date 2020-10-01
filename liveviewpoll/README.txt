@@ -20,3 +20,4 @@ This plugin handles groups correctly.
 If a student starts the first attempt of the quiz after a question has been sent,
  the student will not see the correct question until the next question is sent. 
 Changes for v2.5. No refresh goes more than 1 hour.
+Changes for v2.5.2. Added utility so that teacher can removed polling feature from quizzes and the questions in quizzes.

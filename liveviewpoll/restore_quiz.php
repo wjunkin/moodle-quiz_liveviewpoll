@@ -37,7 +37,7 @@ require_capability('mod/quiz:view', $context);
 echo "<html><head><title>".get_string('restorequizzes', 'quiz_liveviewpoll')."</title></head><body>";
 // Restore the checked quizzes and remove javascript from the questions.
 $checked = array();
-$checked = optional_param_array('pquiz', NULL, PARAM_INT);
+$checked = optional_param_array('pquiz', null, PARAM_INT);
 $checkedquestions = array(); // The array (indexed by ids of all the questions in checked quizzes.
 $checkedqrestored = array(); // The array (indexed by ids) of all the questions restored in checked quizzes.
 $checkedqleft = array(); // The array (indexed by ids) of all the quesitons in checked quizzes but not restored.
@@ -47,25 +47,25 @@ if (count($checked) > 0) {
     foreach ($checked as $key => $value) {
         if ($DB->record_exists('quiz_current_questions', array('id' => $key))) {
             $success = true;
-            $current_question = $DB->get_record('quiz_current_questions', array('id' => $key));
-            $deletedquiz = $DB->get_record('quiz', array('id' => $current_question->quiz_id));
+            $currentquestion = $DB->get_record('quiz_current_questions', array('id' => $key));
+            $deletedquiz = $DB->get_record('quiz', array('id' => $currentquestion->quiz_id));
             $DB->delete_records('quiz_current_questions', array('id' => $key));
         } else {
             $success = false;
         }
         if ($success) {
-            echo "\n<li>".$deletedquiz -> name;
-            if ($current_question->groupid > 0) {
-                $group = $DB->get_record('groups', array('id' => $current_question->groupid));
+            echo "\n<li>".$deletedquiz->name;
+            if ($currentquestion->groupid > 0) {
+                $group = $DB->get_record('groups', array('id' => $currentquestion->groupid));
                 echo " (for group -- ".$group->name.")";
             }
             echo " -- Success</li>";
         } else {
             echo get_string('alreadyremoved', 'quiz_liveviewpoll');
         }
-            
+
         if ($success) {
-            $checkedqslots = $DB->get_records('quiz_slots', array('quizid' => $current_question->quiz_id));
+            $checkedqslots = $DB->get_records('quiz_slots', array('quizid' => $currentquestion->quiz_id));
             foreach ($checkedqslots as $checkedqslot) {
                 $checkedquestions[$checkedqslot->questionid] = $checkedqslot->questionid;
             }
@@ -74,25 +74,25 @@ if (count($checked) > 0) {
     echo "\n</ul>";
     // Find out if any questions that are not in polling quizzes
     // (now that some quizzes have been removed from quiz_active_questions table) have polling javascript in the text.
-    $poll_quests = array();//The array of the ids of all the questions used in polling. Duplicates are OK.
-    $polling_quizzes = $DB->get_records('quiz_current_questions');
-    foreach ($polling_quizzes as $key => $pquiz) {
+    $pollquests = array();// The array of the ids of all the questions used in polling. Duplicates are OK.
+    $pollingquizzes = $DB->get_records('quiz_current_questions');
+    foreach ($pollingquizzes as $key => $pquiz) {
         $slots = $DB->get_records('quiz_slots', array('quizid' => $pquiz->quiz_id));
         foreach ($slots as $slot) {
-            $poll_quests[] = $slot->questionid;
+            $pollquests[] = $slot->questionid;
         }
-    }            
+    }
     $sql = "SELECT * FROM {question} WHERE  questiontext LIKE '%<polling></polling>%'";
-    $q_with_java = $DB->get_records_sql($sql);
-    foreach ($q_with_java as $key => $polling_question) {
-        if (in_array($polling_question->id, $poll_quests)) {
-            if (in_array($polling_question->id, $checkedquestions)) {
-                $checkedqleft[$polling_question->id] = $polling_question->name;
+    $qwithjava = $DB->get_records_sql($sql);
+    foreach ($qwithjava as $key => $pollingquestion) {
+        if (in_array($pollingquestion->id, $pollquests)) {
+            if (in_array($pollingquestion->id, $checkedquestions)) {
+                $checkedqleft[$pollingquestion->id] = $pollingquestion->name;
             }
         } else {
-            remove_qjavascript($polling_question->id);
-            if (in_array($polling_question->id, $checkedquestions)) {
-                $checkedqrestored[$polling_question->id] = $polling_question->name;
+            remove_qjavascript($pollingquestion->id);
+            if (in_array($pollingquestion->id, $checkedquestions)) {
+                $checkedqrestored[$pollingquestion->id] = $pollingquestion->name;
             }
         }
     }
@@ -164,6 +164,12 @@ foreach ($myquizzes as $key => $value) {
     // Quizid is the $key.
     $thisquiz[$value->quiz_id] = $DB->get_record('quiz', array('id' => $value->quiz_id));
 }
+
+/**
+ * Function to remove javascript from questions.
+ *
+ * @param int $questionid The id for the question whose refreshing javascript is removed.
+ */
 function remove_qjavascript($questionid) {
     global $CFG, $DB;
     $script = '<polling><\/polling>\s+<script src="report\/liveviewpoll\/javascript_refresh.js">\s+<\/script>';
@@ -193,7 +199,4 @@ foreach ($myquizzes as $key => $value) {
 }
 echo "\n<br /><input type='submit' value='Submit'>";
 echo "\n</form>";
-    
-   
-?>
-</body></html>
+echo "</body></html>";

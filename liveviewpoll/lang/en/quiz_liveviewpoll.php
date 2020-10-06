@@ -39,7 +39,8 @@ $string['featureinfo'] = "\n<br />The following quizzes are being used for Live 
  \n<br />Later if someone wants to use this quiz for polling, this can still be done by using the Live Polling
  option in the Quiz->Report dropdown menu and then making this quiz suitable for polling.
  \n<br />Please select and then submit all those for which you want to remove the polling feature.";
-$string['graph'] = 'Graph';
+$string['forceanswersubmission'] = "Click here to force 'submit and finish' for all students in this polling session.";
+ $string['graph'] = 'Graph';
 $string['graphtooltip'] = 'Graph of Question Answers';
 $string['here'] = 'here';
 $string['hidenames'] = 'Hide student names.';

@@ -23,6 +23,12 @@
  */
 $string['allgroups'] = 'All groups';
 $string['alreadyremoved'] = "\n<li>It looks like the polling feature had already been removed from one of your selected quizzes.</li>";
+$string['alreadysubmitted'] = "\n<br />It looks like all these quiz attempts have already been submitted.";
+$string['areyousure'] = "Are you sure you want to force all the students involved in this polling session to stop
+    this polling session and have all the answers of all attempts submitted?";
+$string['attemptsclosed'] = " attempts were closed.";
+$string['attemptby'] = " Attempt by ";
+$string['cancelgoback'] = "Cancel and go back to polling page";
 $string['changequestions'] = 'Add/Change Questions';
 $string['choosegroup'] = '<b>Choose a group</b>';
 $string['clickhidedetails'] = 'Click to hide details';
@@ -40,8 +46,10 @@ $string['featureinfo'] = "\n<br />The following quizzes are being used for Live 
  option in the Quiz->Report dropdown menu and then making this quiz suitable for polling.
  \n<br />Please select and then submit all those for which you want to remove the polling feature.";
 $string['forceanswersubmission'] = "Click here to force 'submit and finish' for all students in this polling session.";
- $string['graph'] = 'Graph';
+$string['forcesubmissionpage'] = "Page to force submission of answers to polling quiz";
+$string['graph'] = 'Graph';
 $string['graphtooltip'] = 'Graph of Question Answers';
+$string['hasbeenclosed'] = " has been closed.";
 $string['here'] = 'here';
 $string['hidenames'] = 'Hide student names.';
 $string['liveviewpoll'] = 'Live Polling';
@@ -55,7 +63,8 @@ $string['noqsent'] = "<br />No question has been sent yet.
     \n<br />If the page does not refresh after a new question has been sent, please click ";
 $string['noqforhour'] = "It looks like the teacher has paused polling and has not sent a question for
     more than an hour. If you need to return to the quiz, please click ";
-$string['notremovedfromquestions'] = "\n<br />The in-class polling feature has not been removed from the following questions because they are being used by others:";
+$string['notpollingquiz'] = "\n<br />This doesn't seem to be a polling quiz.";
+    $string['notremovedfromquestions'] = "\n<br />The in-class polling feature has not been removed from the following questions because they are being used by others:";
 $string['notmember'] = "<b>You are not a member of this group.</b>\n<br />";
 $string['notstudent'] = "It doesn't look like you are a student taking this quiz.";
 $string['opennewwindow'] = 'Open a new window for the graph.';

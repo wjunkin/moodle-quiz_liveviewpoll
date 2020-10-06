@@ -131,10 +131,6 @@ function close_attempts($quiz, $cm, $groupstudents = array(), $attemptids) {
                 } else {
                     $message = $name;
                 }
-                // Log the end of this attempt.
-                add_to_log($quiz->course, 'quiz', 
-                        'close attempt of '.$message,
-                        'review.php?attempt='.$attempt->id, $quiz->name, $cm->id);
                 echo "\n<br />Attempt by $name has been closed.";
                 $numclosed ++;
             }

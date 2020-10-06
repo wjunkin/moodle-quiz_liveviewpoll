@@ -36,31 +36,33 @@ $groupid  = optional_param('groupid', 0, PARAM_INT);
 $confirmation = optional_param('confirmation', 0, PARAM_INT);
 $cm = $DB->get_record('course_modules', array('id' => $cmid));
 $courseurl = $CFG->wwwroot.'/course/view.php?id='.$cm->course;
-$course = $DB->get_record('course', array('id' =>$cm->course));
+$course = $DB->get_record('course', array('id' => $cm->course));
 require_login($course, true, $cm);
 $contextinstance = context_module::instance($cm->id);
 if (!(has_capability('mod/quiz:manage', $contextinstance))) {
     echo "\n<br />You must be authorized to access this site";
     exit;
 }
-echo "<html><head><title>Page to force submission of answers to polling quiz</title></head>";
+echo "<html><head><title>".get_string('forcesubmissionpage', 'quiz_liveviewpoll')."</title></head>";
 echo "\n<body>";
+echo "\n<br /><a href=\"".$CFG->wwwroot.'/course/view.php?id='.$cm->course."\">";
+echo get_string('returntocourse', 'quiz_liveviewpoll')."</a>";
 if ($confirmation == 1) {
     // Get student ids for attempts that need to be closed.
     if ($DB->record_exists('quiz_current_questions', array('cmid' => $cmid, 'groupid' => $groupid))) {
         $currentquestion = $DB->get_record('quiz_current_questions', array('cmid' => $cmid, 'groupid' => $groupid));
         $quiz = $DB->get_record('quiz', array('id' => $currentquestion->quiz_id));
     } else {
-        echo "\n<br />This doesn't seem to be a polling quiz.";
-        echo "\n<br />Click <a href='$courseurl'>here</a> to return to the course.";
+        echo get_string('notpollingquiz', 'quiz_liveviewpoll');
+        echo "\n<br /><a href='$courseurl'>".get_string('returntocourse', 'quiz_liveviewpoll')."</a>";
         exit;
     }
     // Get all attempts that are inprogress.
     if ($DB->record_exists('quiz_attempts', array('quiz' => $currentquestion->quiz_id, 'state' => 'inprogress'))) {
         $attempts = $DB->get_records('quiz_attempts', array('quiz' => $currentquestion->quiz_id, 'state' => 'inprogress'));
     } else {
-        echo "\n<br />It looks like all these quiz attempts have already been submitted.";
-        echo "\n<br />Click <a href='$courseurl'>here</a> to return to the course.";
+        echo get_string('alreadysubmitted',  'quiz_liveviewpoll');
+        echo "\n<br /><a href='$courseurl'>".get_string('returntocourse', 'quiz_liveviewpoll')."</a>";
         exit;
     }
     if ($groupid > 0) {
@@ -68,11 +70,11 @@ if ($confirmation == 1) {
         $studentids = explode(',', $currentquestion->groupmembers);
     }
     $numfinished = 0;
-// New code from https://tracker.moodle.org/browse/MDL-37846
-// We have all the attempts.
+    // New code from https://tracker.moodle.org/browse/MDL-37846
+    // We have all the attempts.
     $groupstudents = array();
     $attemptids = array();
-    foreach ($attempts as $key =>$attempt) {
+    foreach ($attempts as $key => $attempt) {
         if ($groupid == 0) {
             $attemptids[] = $attempt->id;
             $groupstudents[] = $attempt->userid;
@@ -83,8 +85,7 @@ if ($confirmation == 1) {
     }
     close_attempts($quiz, $cm, $groupstudents = array(), $attemptids);
 } else {
-    echo "Are you sure you want to force all the students involved in this polling session to stop 
-    this polling session and have all the answers of all attempts submitted?";
+    echo get_string('areyousure', 'quiz_liveviewpoll');
     $pollingurl = $CFG->wwwroot."/mod/quiz/report.php?id=$cmid&mode=liveviewpoll&groupid=$groupid";
     $processattempturl = $CFG->wwwroot."/mod/quiz/report/liveviewpoll/process_attempt.php";
     echo "<form action='$processattempturl' method='GET'>";
@@ -93,32 +94,40 @@ if ($confirmation == 1) {
     echo "<input type='hidden' name='groupid' value='$groupid'>";
     echo "<input type='hidden' name='confirmation' value='1'>";
     echo "<input type='submit' value='Yes I am Sure'>";
-    echo "\n<br /><a href='$pollingurl'>Cancel and go back to polling page</a>";
+    echo "\n<br /><a href='$pollingurl'>".get_string('cancelgoback', 'quiz_liveviewpoll')."</a>";
 }
+
+/**
+ * This function closes the attempts (submit and finish) for all the students in this polling session.
+ *
+ * @param obj $quiz The quiz object for this polling instance.
+ * @param obj $cm The course module for this quiz.
+ * @param array $groupstudents The ids of the students who are in this polling instance.
+ * @param attay $attemptids The array of ids for all the unfinished attempts for these students.
+ */
 function close_attempts($quiz, $cm, $groupstudents = array(), $attemptids) {
     global $CFG, $USER, $DB;
     require_once($CFG->dirroot . "/user/externallib.php");
     $attempts = array();
-    foreach ($attemptids as $key => $attemptid) {//echo "\n<br />debug145 and attemptid is $attemptid";
+    foreach ($attemptids as $key => $attemptid) {
         $attempts[] = $DB->get_record('quiz_attempts', array('id' => $attemptid));
     }
     $numclosed = 0;
-    foreach ($attempts as $attempt) {       
-        if ($attempt->state !='finished') {
+    foreach ($attempts as $attempt) {
+        if ($attempt->state != 'finished') {
             $timestamp = time();
             $transaction = $DB->start_delegated_transaction();
-            $attempt->quba= question_engine::load_questions_usage_by_activity($attempt->uniqueid);
+            $attempt->quba = question_engine::load_questions_usage_by_activity($attempt->uniqueid);
             $attempt->quba->process_all_actions($timestamp);
             $attempt->quba->finish_all_questions($timestamp);
-     
             question_engine::save_questions_usage_by_activity($attempt->quba);
-     
+
             $attempt->timemodified = $timestamp;
             $attempt->timefinish = $timestamp;
             $attempt->sumgrades = $attempt->quba->get_total_mark();
             $attempt->state = 'finished';
             $DB->update_record('quiz_attempts', $attempt);
-            // Get student name
+            // Get student name.
             $studentid = $attempt->userid;
             $studentwhere = "id = $studentid";
             $students = $DB->get_records_select('user', $studentwhere);
@@ -127,20 +136,19 @@ function close_attempts($quiz, $cm, $groupstudents = array(), $attemptids) {
                 $message = '';
                 $name = $student->firstname.' '.$student->lastname;
                 if (strlen($name) > 23 ) {
-                    $message = substr($name,0,23);
+                    $message = substr($name, 0, 23);
                 } else {
                     $message = $name;
                 }
-                echo "\n<br />Attempt by $name has been closed.";
+                echo "\n<br />".get_string('attemptby', 'quiz_liveviewpoll').$name.get_string('hasbeenclosed', 'quiz_liveviewpoll');
                 $numclosed ++;
             }
-            $transaction->allow_commit();           
-        } else {               
+            $transaction->allow_commit();
+        } else {
             continue;
         }
     }
-    echo "\n<br />$numclosed attempts were closed.";
+    echo "\n<br />$numclosed".get_string('attemptsclosed', 'quiz_liveviewpoll');
 }
-    
-echo "\n</body></html>";
 
+echo "\n</body></html>";

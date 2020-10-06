@@ -222,7 +222,8 @@ class quiz_liveviewpoll_report extends quiz_default_report {
                 }
                 if ($DB->record_exists('quiz_current_questions', array('quiz_id' => $quiz->id, 'groupid' => $groupid))) {
                     // This quiz is ready for polling with this group.
-                    echo "<a href=\"".$CFG->wwwroot."/mod/quiz/report/liveviewpoll/process_attempt.php?cmid=$id&groupid=$groupid\">";
+                    echo "<a href=\"".$CFG->wwwroot."/mod/quiz/report/liveviewpoll/process_attempt.php?
+                        cmid=$id&groupid=$groupid\">";
                     echo get_string('forceanswersubmission', 'quiz_liveviewpoll')."</a> ";
                     // This function will also send a question and clear a question.
                     quiz_display_instructor_interface($cm->id, $quiz->id, $canaccess, $groupid, $showanswer);

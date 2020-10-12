@@ -28,6 +28,8 @@ require_once(dirname(dirname(dirname(dirname(dirname(__FILE__))))).'/config.php'
 $quizid = optional_param('quizid', 0, PARAM_INT);
 $questionqid = optional_param('question_id', 0, PARAM_INT);
 $showstudents = optional_param('showstudents', 0, PARAM_INT);
+$evaluate = optional_param('evaluate', 0, PARAM_INT);
+$rag = optional_param('rag', 0, PARAM_INT);
 $quiz = $DB->get_record('quiz', array('id' => $quizid));
 $course = $DB->get_record('course', array('id' => $quiz->course), '*', MUST_EXIST);
 $cm = get_coursemodule_from_instance('quiz', $quiz->id, $course->id, false, MUST_EXIST);
@@ -37,5 +39,4 @@ if (!(has_capability('mod/quiz:manage', $contextinstance))) {
     echo "\n<br />You must be authorized to access this site";
     exit;
 }
-$meta = '<meta http-equiv="refresh" content="10">';
-require_once('quizgraphics.php');
+require_once('poll_tooltip_graph.php');

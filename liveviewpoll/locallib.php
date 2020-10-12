@@ -44,10 +44,13 @@ function quiz_display_instructor_interface($cmid, $quizid, $canaccess, $groupid,
 
     $clearquestion = optional_param('clearQuestion', null, PARAM_TEXT);
     $sendquestionid = optional_param('question', 0, PARAM_INT);
+    $evaluate = optional_param('evaluate', 0, PARAM_INT);
+    $showkey = optional_param('showkey', 0, PARAM_INT);
+    $rag = optional_param('rag', 0, PARAM_INT);
     if (isset($clearquestion)) {
         quiz_clear_question($quizid, $groupid);
     }
-    $state = $DB->get_record('quiz', array('id' => $quizid));
+    $quiz = $DB->get_record('quiz', array('id' => $quizid));
     if ($sendquestionid) {
         quiz_send_question($quizid, $sendquestionid, $groupid);
     }
@@ -78,11 +81,48 @@ function quiz_display_instructor_interface($cmid, $quizid, $canaccess, $groupid,
     \n </script>\n";
 
     echo  quiz_make_instructor_form($quizid, $cmid);
+    // Add in the legend/key if desired.
+    if ($showkey) {
+        echo get_string('fractioncolors', 'quiz_liveviewpoll')."\n<br />";
+        echo "<table border=\"1\" width=\"100%\">\n";
+        $head = "<tr>";
+        for ($i = 0; $i < 11; $i++) {
+            $myfraction = number_format($i / 10, 1, '.', ',');
+            $head .= "<td ";
+            if ($rag == 1) {// Colors from image from Moodle.
+                if ($myfraction == 0) {
+                    $redpart = 244;
+                    $greenpart = 67;
+                    $bluepart = 54;
+                } else if ($myfraction == 1) {
+                    $redpart = 139;
+                    $greenpart = 195;
+                    $bluepart = 74;
+                } else {
+                    $redpart = 255;
+                    $greenpart = 152;
+                    $bluepart = 0;
+                }
+            } else {
+                // Make .5 match up to Moodle amber even when making them different with gradation.
+                $greenpart = intval(67 + 212 * $myfraction - 84 * $myfraction * $myfraction);
+                $redpart = intval(244 + 149 * $myfraction - 254 * $myfraction * $myfraction);
+                if ($redpart > 255) {
+                    $redpart = 255;
+                }
+                $bluepart = intval(54 - 236 * $myfraction + 256 * $myfraction * $myfraction);
+            }
+            $head .= "style='background-color: rgb($redpart,$greenpart,$bluepart)'";
+            $head .= ">$myfraction</td>";
+        }
+        echo $head."\n</tr></table>";
+    }
+    echo "\n<table><tr><td>";
 
     echo get_string('responses', 'quiz_liveviewpoll');
     if ($groupid) {
         $grpname = $DB->get_record('groups', array('id' => $groupid));
-        echo get_string('from', 'quiz_liveviewgrid').$grpname->name;
+        echo get_string('from', 'quiz_liveviewpoll').$grpname->name;
     } else if ($canaccess) {
         echo ' -- ('.get_string('allgroups', 'quiz_liveviewpoll').')';
     }
@@ -91,8 +131,9 @@ function quiz_display_instructor_interface($cmid, $quizid, $canaccess, $groupid,
     if (quiz_show_current_question($quizid, $showanswer, $groupid) == 1) {
         echo "<br>";
         echo "<br>";
-        $iframeurl = $CFG->wwwroot."/mod/quiz/report/liveviewpoll/quizgraphics.php?quizid=$quizid&id=$cmid&groupid=$groupid";
-        $popupgraphurl = $CFG->wwwroot."/mod/quiz/report/liveviewpoll/popupgraph.php?quizid=$quizid&groupid=$groupid";
+        $getvalues = "quizid=$quizid&id=$cmid&groupid=$groupid&evaluate=$evaluate&rag=$rag&courseid=".$quiz->course;
+        $iframeurl = $CFG->wwwroot."/mod/quiz/report/liveviewpoll/poll_tooltip_graph.php?$getvalues";
+        $popupgraphurl = $CFG->wwwroot."/mod/quiz/report/liveviewpoll/popupgraph.php?$getvalues";
         echo "<iframe id= \"graphIframe\" src=\"".$iframeurl."\" height=\"540\" width=\"723\"></iframe>";
         echo "<br><br><a onclick=\"newwindow=window.open('$popupgraphurl', '',
                 'width=750,height=560,toolbar=no,location=no,menubar=no,copyhistory=no,status=no,";
@@ -246,10 +287,11 @@ function quiz_instructor_buttons($quizid, $groupid) {
  * @param int $quizid The id of this quiz instance.
  * @param int $groupid The id of the group to which it is to be sent.
  * @param string $mode The string, liveviewpoll, telling reports that this is the Live View Poll module.
- * @param int $hidden The value to show, 1, or hide, 0, the students' names.
+ * @param array $hidden The array of value to show, 1, or hide, 0, for various options.
+ * @param array $strings The array of strings to use to describe each hidden value.
  * @param int $refresht The value (in 10 seconds) for refreshing the display.
  */
-function option_form($id, $quizid, $groupid, $mode, $hidden, $refresht) {
+function option_form($id, $quizid, $groupid, $mode, $hidden, $strings, $refresht) {
     global $DB, $CFG;
     // Script to hide or display the option form.
     echo "\n<script>";
@@ -308,11 +350,14 @@ function option_form($id, $quizid, $groupid, $mode, $hidden, $refresht) {
     }
     $td = "<td style=\"padding:5px 8px;border:1px solid #CCC;\">";
     echo "\n<table>";
-    echo "\n<tr>".$td.get_string('correctanswer', 'quiz_liveviewpoll')."</td>";
-    echo $td."<input type='radio' name='showanswer' value=1 ".$checked['showanswer']."> ";
-    echo get_string('yes', 'quiz_liveviewpoll')."</td>";
-    echo $td."<input type='radio' name='showanswer' value=0 ".$notchecked['showanswer']."> ";
-    echo get_string('no', 'quiz_liveviewpoll')."</td></tr>";
+
+    foreach ($hidden as $hiddenkey => $hiddenvalue) {
+        echo "\n<tr>".$td.$strings[$hiddenkey]."</td>";
+        echo $td."<input type='radio' name='$hiddenkey' value=1 ".$checked[$hiddenkey]."> ";
+        echo get_string('yes', 'quiz_liveviewpoll')."</td>";
+        echo $td."<input type='radio' name='$hiddenkey' value=0 ".$notchecked[$hiddenkey]."> ";
+        echo get_string('no', 'quiz_liveviewpoll')."</td></tr>";
+    }
     echo "\n</table>";
     $buttontext = get_string('submitoptionchanges', 'quiz_liveviewpoll');
     echo "<br /><input type=\"submit\" value=\"$buttontext\"></form>";
@@ -431,7 +476,10 @@ function quiz_make_instructor_form($quizid, $cmid) {
             }
             </style>";
     $myform .= "<form action=\"?".$querystring."\" method=\"post\">\n<table border=0>";
+    $script = '<polling><\/polling>\s+<script src="report\/liveviewpoll\/javascript_refresh.js">\s+<\/script>';
     foreach (quiz_get_questions($quizid) as $items) {
+        // Remove the refresh javascript from the questions.
+        $items['question'] = preg_replace("/$script/m", '', $items['question']);
         $previewurl = $CFG->wwwroot.'/question/preview.php?id='.
             $items['id'].'&cmid='.$cmid.
             '&behaviour=deferredfeedback&correctness=0&marks=1&markdp=-2&feedback&generalfeedback&rightanswer&history';
@@ -439,8 +487,8 @@ function quiz_make_instructor_form($quizid, $cmid) {
         $myform .= "</td><td><input type=\"submit\" name=\"question\" value=\"".$items['id']."\" />";
         $myform .= "</td><td><a href=\"$previewurl\" onclick=\"return quizpopup('".$items['id']."')\" target=\"_blank\">";
         $myform .= quiz_create_preview_icon()."</a></td>";
-        $graphurl = $CFG->wwwroot.'/mod/quiz/report/liveviewpoll/quizgraphics.php?
-            question_id='.$items['id']."&quizid=".$quizid."&norefresh=1";
+        $graphurl = $CFG->wwwroot.'/mod/quiz/report/liveviewpoll/quizgraphics.php?';
+        $graphurl .= 'question_id='.$items['id']."&quizid=".$quizid."&norefresh=1";
         $myform .= "<td><a href=\"".$graphurl."\" target=\"_blank\" title='".get_string('graphtooltip', 'quiz_liveviewpoll')."'>";
         $myform .= get_string('graph', 'quiz_liveviewpoll')."</a></td>";
         $myform .= "<td style=\"margin-bottom:20rem\">".$items['question']."</td></tr>\n";
@@ -468,7 +516,9 @@ function quiz_show_current_question($quizid, $showanswer, $groupid) {
             return(0);
         }
         $questiontext = $DB->get_record('question', array('id' => $question->question_id));
-        echo get_string('currentquestionis', 'quiz_liveviewpoll')." -> ".$questiontext->questiontext;
+        $script = '<polling><\/polling>\s+<script src="report\/liveviewpoll\/javascript_refresh.js">\s+<\/script>';
+        $qtext = preg_replace("/$script/m", '', $questiontext->questiontext);
+        echo get_string('currentquestionis', 'quiz_liveviewpoll')." -> ".$qtext;
         if ($showanswer) {
             if ($questiontext->qtype == 'essay') {
                 $rightanswer = get_string('rightansweressay', 'quiz_liveviewpoll');
@@ -540,9 +590,7 @@ function quiz_get_questions($quizid) {
         }
         $aquestions = $DB->get_record('question', array('id' => $q));
         if (isset($aquestions->questiontext)) {
-            $qtext = explode('</script><polling></polling>', $aquestions->questiontext);
-            $myqtext = $qtext[count($qtext) - 1];
-            $pagearray2[] = array('id' => $q, 'question' => $myqtext,
+            $pagearray2[] = array('id' => $q, 'question' => $aquestions->questiontext,
                 'answers' => quiz_get_answers($q));
         }
     }

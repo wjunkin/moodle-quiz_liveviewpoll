@@ -23,3 +23,5 @@ Changes for v2.5. No refresh goes more than 1 hour.
 Changes for v2.5.2. Added utility so that teacher can removed polling feature from quizzes and the questions in quizzes.
 Changes for v2.5.3. Added communication links from polling report page to restore_quiz.php and back to course.
 Changes for v2.5.4. Added in the utility to allow teachers to force 'submit and finish' for all students in the polling session.
+Changes for v2.5.7. Added in the options to evaluate, showkey, and use RAG colors. 
+    The option to show student names will be added soon.

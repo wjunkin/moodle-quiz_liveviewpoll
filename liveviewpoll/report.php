@@ -125,6 +125,10 @@ class quiz_liveviewpoll_report extends quiz_default_report {
         $groupid = optional_param('groupid', 0, PARAM_INT);
         $singleqid = optional_param('singleqid', 0, PARAM_INT);
         $showanswer = optional_param('showanswer', 0, PARAM_INT);
+        $rag = optional_param('rag', 0, PARAM_INT);
+        $evaluate = optional_param('evaluate', 0, PARAM_INT);
+        $showkey = optional_param('showkey', 0, PARAM_INT);
+        $order = optional_param('order', 0, PARAM_INT);
         $shownames = optional_param('shownames', 1, PARAM_INT);
         $refresht = optional_param('refresht', 1, PARAM_INT);
         $slots = array();
@@ -162,17 +166,13 @@ class quiz_liveviewpoll_report extends quiz_default_report {
         $hidden['singleqid'] = $singleqid;
         $hidden['showanswer'] = $showanswer;
         $hidden['refresht'] = $refresht;
+        $hidden['rag'] = $rag;
+        $hidden['evaluate'] = $evaluate;
+        $hidden['showkey'] = $showkey;
+        $hidden['shownames'] = $shownames;
+        $hidden['order'] = $order;
         $options = array('showanswer', 'refresht');
-        foreach ($options as $option) {
-            if ($changeoption) {
-                $_SESSION[$option] = $hidden[$option];
-            } else {
-                if (isset($_SESSION[$option])) {
-                    $$option = $_SESSION[$option];
-                    $hidden[$option] = $_SESSION[$option];
-                }
-            }
-        }
+
         $showresponses = false;
         if ($groupmode == 1) {
             if ($groupid == 0) {
@@ -198,7 +198,22 @@ class quiz_liveviewpoll_report extends quiz_default_report {
 
         // Put options here.
         if ($showresponses) {
-            $hidden = option_form($id, $quizid, $groupid, $mode, $hidden, $refresht);
+            $hidden = array();
+            $strings = array();
+            $hidden['showanswer'] = $showanswer;
+            $hidden['rag'] = $rag;
+            $hidden['evaluate'] = $evaluate;
+            $hidden['showkey'] = $showkey;
+            $hidden['order'] = $order;
+            $hidden['shownames'] = $shownames;
+            $strings['showanswer'] = get_string('correctanswer', 'quiz_liveviewpoll');
+            $strings['rag'] = get_string('colorindicategrade', 'quiz_liveviewpoll');
+            $strings['evaluate'] = get_string('colorindicategrades', 'quiz_liveviewpoll');
+            $strings['showkey'] = get_string('thecolorkey', 'quiz_liveviewpoll');
+            $strings['order'] = get_string('studentsnames', 'quiz_liveviewpoll');
+            $strings['shownames'] = get_string('shownames', 'quiz_liveviewpoll');
+
+            $printoptionform = option_form($id, $quizid, $groupid, $mode, $hidden, $strings, $refresht);
         }
         // Find out if there may be groups. If so, allow the teacher to choose a group.
         $canaccess = has_capability('moodle/site:accessallgroups', $contextmodule);
@@ -222,6 +237,7 @@ class quiz_liveviewpoll_report extends quiz_default_report {
                 }
                 if ($DB->record_exists('quiz_current_questions', array('quiz_id' => $quiz->id, 'groupid' => $groupid))) {
                     // This quiz is ready for polling with this group.
+                    // This link forcess the submission of all attempts.
                     echo "<a href=\"".$CFG->wwwroot."/mod/quiz/report/liveviewpoll/process_attempt.php?
                         cmid=$id&groupid=$groupid\">";
                     echo get_string('forceanswersubmission', 'quiz_liveviewpoll')."</a> ";

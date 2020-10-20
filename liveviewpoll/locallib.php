@@ -47,6 +47,8 @@ function quiz_display_instructor_interface($cmid, $quizid, $canaccess, $groupid,
     $evaluate = optional_param('evaluate', 0, PARAM_INT);
     $showkey = optional_param('showkey', 0, PARAM_INT);
     $rag = optional_param('rag', 0, PARAM_INT);
+    $shownames = optional_param('shownames', 0, PARAM_INT);
+    $order = optional_param('order', 0, PARAM_INT);
     if (isset($clearquestion)) {
         quiz_clear_question($quizid, $groupid);
     }
@@ -120,7 +122,7 @@ function quiz_display_instructor_interface($cmid, $quizid, $canaccess, $groupid,
     echo "\n<table><tr><td>";
 
     echo get_string('responses', 'quiz_liveviewpoll');
-    if ($groupid) {
+    if ($groupid > 0) {
         $grpname = $DB->get_record('groups', array('id' => $groupid));
         echo get_string('from', 'quiz_liveviewpoll').$grpname->name;
     } else if ($canaccess) {
@@ -129,9 +131,24 @@ function quiz_display_instructor_interface($cmid, $quizid, $canaccess, $groupid,
     echo "<br>";
 
     if (quiz_show_current_question($quizid, $showanswer, $groupid) == 1) {
-        echo "<br>";
-        echo "<br>";
-        $getvalues = "quizid=$quizid&id=$cmid&groupid=$groupid&evaluate=$evaluate&rag=$rag&courseid=".$quiz->course;
+        list($qstems, $qfractions) = question_stems($quizid, $groupid);
+        if (count($qstems) > 1) {
+            $tdwidth = 648 / (count($qstems) * 6.95);// Percentage width of each cell.
+            $cellstyle = "text-align:center; width:$tdwidth%";
+            echo "<table width=\"695\" border=1>";
+            echo "<tr>";
+            echo "<td width=47>";
+            for ($i = 0; $i < count($qstems); $i++) {
+                $colorstyle = '';
+                if ($evaluate) {
+                    $colorstyle = ';'.color_style($rag, $qfractions[$i]);
+                }
+                echo "<td style=\"text-align:center; width:$tdwidth%$colorstyle\">".$qstems[$i]."</td>";
+            }
+            echo "</tr></table>";
+        }
+        $getvalues = "quizid=$quizid&id=$cmid&groupid=$groupid&evaluate=$evaluate&rag=$rag&order=$order";
+        $getvalues .= "&shownames=$shownames&courseid=".$quiz->course;
         $iframeurl = $CFG->wwwroot."/mod/quiz/report/liveviewpoll/poll_tooltip_graph.php?$getvalues";
         $popupgraphurl = $CFG->wwwroot."/mod/quiz/report/liveviewpoll/popupgraph.php?$getvalues";
         echo "<iframe id= \"graphIframe\" src=\"".$iframeurl."\" height=\"540\" width=\"723\"></iframe>";
@@ -143,6 +160,66 @@ function quiz_display_instructor_interface($cmid, $quizid, $canaccess, $groupid,
     }
 }
 
+/**
+ * This function returns the question stems and the fractional value for multichoice type question that was sent.
+ *
+ * @param int $quizid The id for the quiz that has the question that was sent.
+ * @param int $groupid The id of the group to whom this question was sent.
+ * @return array The text of the answer stems ($qstems) and the corresponding fractions ($qfractions).
+ */
+function question_stems($quizid, $groupid) {
+    global $DB;
+    $qstems = array();
+    $qfractions = array();
+    if ($DB->record_exists('quiz_current_questions', array('quiz_id' => $quizid, 'groupid' => $groupid))) {
+        $currentquestion = $DB->get_record('quiz_current_questions', array('quiz_id' => $quizid, 'groupid' => $groupid));
+        $questionid = $currentquestion->question_id;
+        if ($DB->record_exists('question_answers', array('question' => $questionid))) {
+            $answers = $DB->get_records('question_answers', array('question' => $questionid));
+            foreach ($answers as $answer) {
+                $qstems[] = $answer->answer;
+                $qfractions[] = $answer->fraction;
+            }
+        }
+    }
+    $return = array($qstems, $qfractions);
+    return $return;
+}
+
+/**
+ * This function returns the color code to be used in the style for a cell in a table.
+ *
+ * @param int $rag Indicates if the color scheme is rainbow or RAG.
+ * @param float $myfraction The fraction that a student receives for a given answer.
+ * @return string The text to be used for the background color.
+ */
+function color_style($rag, $myfraction) {
+    if ($rag == 1) {// Colors from image from Moodle.
+        if ($myfraction < 0.01) {
+            $redpart = 244;
+            $greenpart = 67;
+            $bluepart = 54;
+        } else if ($myfraction == 1) {
+            $redpart = 139;
+            $greenpart = 195;
+            $bluepart = 74;
+        } else {
+            $redpart = 255;
+            $greenpart = 152;
+            $bluepart = 0;
+        }
+    } else {
+        // Make .5 match up to Moodle amber even when making them different with gradation.
+        $greenpart = intval(67 + 212 * $myfraction - 84 * $myfraction * $myfraction);
+        $redpart = intval(244 + 149 * $myfraction - 254 * $myfraction * $myfraction);
+        if ($redpart > 255) {
+            $redpart = 255;
+        }
+        $bluepart = intval(54 - 236 * $myfraction + 256 * $myfraction * $myfraction);
+    }
+    $colorstyle = " background-color: rgb($redpart, $greenpart, $bluepart);";
+    return $colorstyle;
+}
 /**
  * This function sets the question in the database so the client functions can find what question is active.  And it does it fast.
  *
@@ -263,7 +340,14 @@ function pollingslot($quizid, $currentquestionid) {
  */
 function quiz_instructor_buttons($quizid, $groupid) {
     $mycmid = optional_param('id', '0', PARAM_INT);// The cmid of the quiz instance.
-    $querystring = 'mode=liveviewpoll&groupid='.$groupid;
+    $showanswer = optional_param('showanswer', 0, PARAM_INT);
+    $rag = optional_param('rag', 0, PARAM_INT);
+    $evaluate = optional_param('evaluate', 0, PARAM_INT);
+    $showkey = optional_param('showkey', 0, PARAM_INT);
+    $order = optional_param('order', 0, PARAM_INT);
+    $shownames = optional_param('shownames', 1, PARAM_INT);
+    $querystring = "mode=liveviewpoll&groupid=$groupid$showanswer=$showanswer&rag=$rag&eavluate=$evaluate";
+    $querystring .= "&showkey=$showkey&order=$order&shownames=$shownames";
     if ($mycmid) {
         $querystring .= '&id='.$mycmid;
     }
@@ -406,6 +490,9 @@ function liveviewpoll_group_dropdownmenu($courseid, $geturl, $canaccess, $hidden
             $mygroup = $value;
         }
     }
+    $id = optional_param('id', 0, PARAM_INT);
+    echo "\n<input type=\"hidden\" name=\"id\" value=\"$id\">";
+    echo "\n<input type=\"hidden\" name=\"mode\" value=\"liveviewpoll\">";
     echo "\n<select name=\"groupid\" onchange='this.form.submit()'>";
     echo "\n<option value=\"0\">".get_string('choosegroup', 'quiz_liveviewpoll')."</option>";
     if ($canaccess && ($mygroup > 0)) {
@@ -459,13 +546,22 @@ function quiz_make_instructor_form($quizid, $cmid) {
     global $CFG;
     global $PAGE;
 
+    $showanswer = optional_param('showanswer', 0, PARAM_INT);
+    $rag = optional_param('rag', 0, PARAM_INT);
+    $evaluate = optional_param('evaluate', 0, PARAM_INT);
+    $showkey = optional_param('showkey', 0, PARAM_INT);
+    $order = optional_param('order', 0, PARAM_INT);
+    $shownames = optional_param('shownames', 1, PARAM_INT);
+    $optionstring = "&showanswer=$showanswer&rag=$rag&evaluate=$evaluate";
+    $optionstring .= "&showkey=$showkey&order=$order&shownames=$shownames";
+
     $mycmid = optional_param('id', '0', PARAM_INT);// The cmid of the quiz instance.
     $mode = optional_param('mode', '', PARAM_TEXT);
     $groupid = optional_param('groupid', 0, PARAM_INT);
     if ($mycmid) {
-        $querystring = 'id='.$mycmid.'&mode='.$mode.'&groupid='.$groupid;
+        $querystring = 'id='.$mycmid.'&mode='.$mode.'&groupid='.$groupid.$optionstring;
     } else if ($cmid > 0) {
-        $querystring = 'id='.$cmid.'&mode='.$mode.'&groupid='.$groupid;
+        $querystring = 'id='.$cmid.'&mode='.$mode.'&groupid='.$groupid.$optionstring;
     } else {
         $querystring = '';
     }
@@ -521,7 +617,7 @@ function quiz_show_current_question($quizid, $showanswer, $groupid) {
         echo get_string('currentquestionis', 'quiz_liveviewpoll')." -> ".$qtext;
         if ($showanswer) {
             if ($questiontext->qtype == 'essay') {
-                $rightanswer = get_string('rightansweressay', 'quiz_liveviewpoll');
+                $rightanswer = get_string('rightansweressay', 'quiz_liveviewpoll')."\n<br />";
             } else {
                 $attempts = $DB->get_records('question_attempts', array('questionid' => $question->question_id));
                 foreach ($attempts as $attempt) {

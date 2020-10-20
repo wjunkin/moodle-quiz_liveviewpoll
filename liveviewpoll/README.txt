@@ -25,3 +25,6 @@ Changes for v2.5.3. Added communication links from polling report page to restor
 Changes for v2.5.4. Added in the utility to allow teachers to force 'submit and finish' for all students in the polling session.
 Changes for v2.5.7. Added in the options to evaluate, showkey, and use RAG colors. 
     The option to show student names will be added soon.
+Changes for v2.5.8. Removed tooltips from histogram labels and ability to show names on top of the histogram bars. 
+    Added in a table showing question stems above the histogram and a table showing student answers below the histogram.
+    Made the iframe window adjust to the size of the histogram plus the names table when names are shown.

@@ -36,7 +36,7 @@ $shownames = optional_param('shownames', 0, PARAM_INT);
 $order = optional_param('order', 0, PARAM_INT);
 $id = optional_param('id', 0, PARAM_INT);
 $cmid = $id;
-$cm = get_coursemodule_from_id('quiz', $cmid, 0, false, MUST_EXIST);
+$cm = get_coursemodule_from_id('quiz', $id, 0, false, MUST_EXIST);
 $course = $DB->get_record('course', array('id' => $courseid));
 require_login($course, true, $cm);
 $context = context_module::instance($cmid);
@@ -56,24 +56,37 @@ if ($questionqid) {
     $questionid = $question->question_id;
     $timesent = $question->timemodified;
 }
-$questiontext = $DB->get_record('question', array('id' => $questionid));
 
-// For those questions that have answers, get the possible answers and create the labels for the histogram.
-if ($answers = $DB->get_records('question_answers', array('question' => $questionid))) {
+$multitype = array('multichoice', 'truefalse', 'calculatedmulti');
+if (!($questiontext = $DB->get_record('question', array('id' => $questionid)))) {
+    echo "\n<br />You must submit a valid questionid";
+    exit;
+}
+if (in_array($questiontext->qtype, $multitype)) {
+    $histogram = true;
+} else {
+    $histogram = false;
+}
+
+if ($histogram) {
+    // For those questions that have answers, get the possible answers and create the labels for the histogram.
     $labels = '';
+    $qanswerids = array();
     $fraction = '';
-    $n = 0;
-    foreach ($answers as $answer) {
-        $qanswerids[$n] = $answer->id;// Needed for truefalse questions.
-        $labels .= "&x[$n]=".substr(strip_tags($answer->answer), 0, 15);
-        $myfraction = $answer->fraction;
-        if ($evaluate) {
-            if ($rag && ($myfraction <> 0) && ($myfraction <> 1)) {
-                $myfraction = 0.5;
+    if ($answers = $DB->get_records('question_answers', array('question' => $questionid))) {
+        $n = 0;
+        foreach ($answers as $answer) {
+            $qanswerids[$n] = $answer->id;// Needed for truefalse questions.
+            $labels .= "&x[$n]=".substr(strip_tags($answer->answer), 0, 15);
+            $myfraction = $answer->fraction;
+            if ($evaluate) {
+                if ($rag && ($myfraction <> 0) && ($myfraction <> 1)) {
+                    $myfraction = 0.5;
+                }
+                $fraction .= "&fr[$n]=$myfraction";
             }
-            $fraction .= "&fr[$n]=$myfraction";
+            $n++;
         }
-        $n++;
     }
 }
 $stans = array();// The string of answers for each student to this question, indexed by the $userid.
@@ -95,165 +108,140 @@ foreach ($quizattempts as $quizattempt) {
                     $stanswer = array();// The array of questionanswerids for this student for multichoice with several answers.
                     $attemptstepid = $attemptstep->id;
                     $attemptdata = $DB->get_records('question_attempt_step_data',  array('attemptstepid' => $attemptstepid));
-                    foreach ($attemptdata as $datainfo) {
-                        $name = $datainfo->name;
-                        $value = $datainfo->value;
-                        if ($name == '_order') {
-                            // The order step_data should always occur before the answers or choices, except for truefalse.
-                            $questionanswerids = explode(',', $value);
-                        } else if ($attemptstep->state == 'complete') {
-                            if ($name == 'answer') {
-                                if ($questiontext->qtype == 'truefalse') {
-                                    $truefalseindex = 1 - $value;
-                                    $stans[$userid] = $qanswerids[$truefalseindex];
-                                } else {
-                                    $stans[$userid] = $questionanswerids[$value];
+                    if ($histogram) {
+                        foreach ($attemptdata as $datainfo) {
+                            $name = $datainfo->name;
+                            $value = $datainfo->value;
+                            if ($name == '_order') {
+                                // The order step_data should always occur before the answers or choices, except for truefalse.
+                                $questionanswerids = explode(',', $value);
+                            } else if ($attemptstep->state == 'complete') {
+                                if ($name == 'answer') {
+                                    if ($questiontext->qtype == 'truefalse') {
+                                        $truefalseindex = 1 - $value;
+                                        $stans[$userid] = $qanswerids[$truefalseindex];
+                                    } else {
+                                        $stans[$userid] = $questionanswerids[$value];
+                                    }
                                 }
-                            }
-                            if (preg_match('/choice(\d)/', $name, $matches)) {
-                                if ($value > 0) {
-                                    $stanswer[] = $questionanswerids[$matches[1]];
+                                if (preg_match('/choice(\d)/', $name, $matches)) {
+                                    if ($value > 0) {
+                                        $stanswer[] = $questionanswerids[$matches[1]];
+                                    }
                                 }
-                            }
-                            if (preg_match('/p(\d)/', $name, $matches)) {
-                                if ($value > 0) {
-                                    $stanswer[] = $qanswertext[$value];
+                                if (preg_match('/p(\d)/', $name, $matches)) {
+                                    if ($value > 0) {
+                                        $stanswer[] = $qanswertext[$value];
+                                    }
                                 }
                             }
                         }
-                    }
-                    if (count($stanswer)) {
-                        $stans[$userid] = implode(',', $stanswer);
+                        if (count($stanswer)) {
+                            $stans[$userid] = implode(',', $stanswer);
+                        }
+                    } else {
+                        foreach ($attemptdata as $datainfo) {
+                            $name = $datainfo->name;
+                            $value = $datainfo->value;
+                            if ($name == 'answer') {
+                                $stans[$userid] = $value;
+                            }
+                        }
                     }
                 }
             }
         }
     }
 }
-$myx = array();
-foreach ($qanswerids as $qanswerid) {
-    $myx[$qanswerid] = 0;
-    $barnames[$qanswerid] = '';
-}
-foreach ($stans as $key => $value) {
-    if (strlen($value) > 0) {
-        $values = explode(',', $value);
-        foreach ($values as $qansid) {
-            if (isset($myx[$qansid])) {
-                $myx[$qansid] ++;
-                $name = $DB->get_record('user', array('id' => $key));
-                if ($order == 1) {// Order by first name.
-                    $barnames[$qansid] .= $name->firstname.'&nbsp;'.$name->lastname.';;';
+
+if ($histogram) {
+    $myx = array();
+    if (count($qanswerids) > 0) {
+        foreach ($qanswerids as $qanswerid) {
+            $myx[$qanswerid] = 0;
+            $barnames[$qanswerid] = '';
+        }
+    }
+    foreach ($stans as $key => $value) {
+        if (strlen($value) > 0) {
+            $values = explode(',', $value);
+            foreach ($values as $qansid) {
+                if (isset($myx[$qansid])) {
+                    $myx[$qansid] ++;
+                    $name = $DB->get_record('user', array('id' => $key));
+                    if ($order == 1) {// Order by first name.
+                        $barnames[$qansid] .= $name->firstname.'&nbsp;'.$name->lastname.';;';
+                    } else {
+                        $barnames[$qansid] .= $name->lastname.',&nbsp;'.$name->firstname.';;';
+                    }
                 } else {
-                    $barnames[$qansid] .= $name->lastname.',&nbsp;'.$name->firstname.';;';
+                    echo "\n<br />".get_string('somethingiswrongwithanswerid', 'quiz_liveviewpoll')." $qansid";
                 }
-            } else {
-                echo "\n<br />".get_string('somethingiswrongwithanswerid', 'quiz_liveviewpoll')." $qansid";
             }
         }
     }
-}
-$graphinfo = "?data=".implode(",", $myx).$labels.$fraction."&total=10";
-$mygraphinfo = "data=".implode(",", $myx).$labels.$fraction."&total=10&cmid=$cmid";
-$qanswers = $DB->get_records('question_answers', array('question' => $questionid));
-$numofbars = count($qanswers);
-$i = 0;
-foreach ($qanswers as $qanswer) {
-    $mynames[$i] = $barnames[$qanswer->id];
-    $choice[$i] = $qanswer->answer;
-    $fr[$i] = $qanswer->fraction;
-    $i++;
-}
-if ($numofbars == 0) {
-    echo "Something is wrong for question $questionid.";
-    exit;
+    $graphinfo = "?data=".implode(",", $myx).$labels.$fraction."&total=10";
+    $mygraphinfo = "data=".implode(",", $myx).$labels.$fraction."&total=10&cmid=$cmid";
+    $qanswers = $DB->get_records('question_answers', array('question' => $questionid));
+    $numofbars = count($qanswers);
+    $i = 0;
+    foreach ($qanswers as $qanswer) {
+        $mynames[$i] = $barnames[$qanswer->id];
+        $choice[$i] = $qanswer->answer;
+        $fr[$i] = $qanswer->fraction;
+        $i++;
+    }
 }
 echo "<html><head>";
-$xwidthpx = intval(648 / $numofbars).'px';
-$barwidthpx = intval(486 / $numofbars).'px';
+if ($histogram) {
+    $barwidthpx = 1;
+    if ($numofbars > 0) {
+        $barwidthpx = intval(486 / $numofbars).'px';
+    }
+    echo "
+    <style>
+    .tooltip {
+      position: absolute;
+      bottom: 40px;
+      width: $barwidthpx;
+      border: 0;
+    }
 
-echo "
-<style>
-.tooltip {
-  position: absolute;
-  bottom: 40px;
-  width: $barwidthpx;
-  border: 0;
-}
+    .tooltip .tooltiptext {
+      visibility: hidden;
+      width: 120px;
+      background-color: #555;
+      color: #fff;
+      text-align: center;
+      border-radius: 6px;
+      padding: 5px 0;
+      position: absolute;
+      z-index: 1;
+      bottom: 125%;
+      left: 50%;
+      margin-left: -60px;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
 
-.tooltip .tooltiptext {
-  visibility: hidden;
-  width: 120px;
-  background-color: #555;
-  color: #fff;
-  text-align: center;
-  border-radius: 6px;
-  padding: 5px 0;
-  position: absolute;
-  z-index: 1;
-  bottom: 125%;
-  left: 50%;
-  margin-left: -60px;
-  opacity: 0;
-  transition: opacity 0.3s;
-}
+    .tooltip .tooltiptext::after {
+      content: '';
+      position: absolute;
+      top: 100%;
+      left: 50%;
+      margin-left: -5px;
+      border-width: 5px;
+      border-style: solid;
+      border-color: #555 transparent transparent transparent;
+    }
 
-.tooltip .tooltiptext::after {
-  content: '';
-  position: absolute;
-  top: 100%;
-  left: 50%;
-  margin-left: -5px;
-  border-width: 5px;
-  border-style: solid;
-  border-color: #555 transparent transparent transparent;
+    .tooltip:hover .tooltiptext {
+      visibility: visible;
+      opacity: 1;
+    }
+    ";
+    echo "\n</style>";
 }
-
-.tooltip:hover .tooltiptext {
-  visibility: visible;
-  opacity: 1;
-}
-.mytooltip {
-  position: absolute;
-  bottom: 20;
-  width:  $xwidthpx;
-  border: 0;
-}
-
-.mytooltip .tooltiptext {
-  visibility: hidden;
-  width: 120px;
-  background-color: #555;
-  color: #fff;
-  text-align: center;
-  border-radius: 6px;
-  padding: 5px 0;
-  position: absolute;
-  z-index: 1;
-  bottom: 125%;
-  left: 50%;
-  margin-left: -60px;
-  opacity: 0;
-  transition: opacity 0.3s;
-}
-
-.mytooltip .tooltiptext::after {
-  content: '';
-  position: absolute;
-  top: 100%;
-  left: 50%;
-  margin-left: -5px;
-  border-width: 5px;
-  border-style: solid;
-  border-color: #555 transparent transparent transparent;
-}
-
-.mytooltip:hover .tooltiptext {
-  visibility: visible;
-  opacity: 1;
-}
-";
-echo "\n</style>";
 echo "\n<body style=\"text-align:center;\">";
 if (!($norefresh)) {
     // Put in the warning to refresh the page after 2 hours of checking refresh.
@@ -261,8 +249,9 @@ if (!($norefresh)) {
     $iframeurl = $CFG->wwwroot."/mod/quiz/report/liveviewpoll/poll_tooltip_graph.php";
     echo "\n<form action='$iframeurl' method='get'><input type='submit' value='Click to Refresh Data' class=\"blinking\">";
     echo "\n<input type='hidden' name='quizid' value='$quizid'>";
+    echo "\n<input type='hidden' name='courseid' value='$courseid'>";
     echo "\n<input type='hidden' name='groupid' value='$groupid'>";
-    echo "\n<input type='hidden' name='cmid' value='$cmid'>";
+    echo "\n<input type='hidden' name='id' value='$cmid'>";
     echo "\n<input type='hidden' name='questionid' value='$questionid'>";
     echo "\n<input type='hidden' name='evaluate' value='$evaluate'>";
     echo "\n<input type='hidden' name='shownames' value='$shownames'>";
@@ -285,74 +274,108 @@ if (!($norefresh)) {
     echo "\n<script src=\"javascript_teach_refreshG2.js\">";
     echo "\n</script>";
 }
+if ($histogram) {
+    $y = array();
+    $xaxis = '';
+    for ($i = 0; $i < $numofbars; $i++) {
+        $y[$i] = $i + 1;
+        $xaxis .= "&x[$i]=".$choice[$i];
+    }
+    $data = 'data='.implode(',', $y);
+    $get = $data.$xaxis.'&total=10&cmid=3';
+    if ($evaluate == 1) {
+        $get .= $fraction;
+    }
 
-$y = array();
-$xaxis = '';
-for ($i = 0; $i < $numofbars; $i++) {
-    $y[$i] = $i + 1;
-    $xaxis .= "&x[$i]=".$choice[$i];
-}
-$data = 'data='.implode(',', $y);
-$get = $data.$xaxis.'&total=10&cmid=3';
-if ($evaluate == 1) {
-    $get .= $fraction;
-}
-$xoffset = 47;
-$xwidth = intval(648 / $numofbars);
-$baroffset = intval(81 / $numofbars) + 47;
-echo "\n<image src=\"".$CFG->wwwroot."/mod/quiz/report/liveviewpoll/graph.php?$mygraphinfo\" align='left'>";
-for ($i = 0; $i < $numofbars; $i++) {
-    $left = $xoffset + ($i * $xwidth);
-    echo "\n<div class=\"mytooltip\" style=\"left: $left\">&nbsp;";
-    $tooltiptext = $choice[$i];
-    echo "\n<span class=\"tooltiptext\">$tooltiptext</span>";
-    echo "\n</div>";
+    echo "\n<image src=\"".$CFG->wwwroot."/mod/quiz/report/liveviewpoll/graph.php?$mygraphinfo\" align='left'>";
+    echo "\n</image>";
+    if ($shownames) {
+        echo "\n<br /><table border=1><tr><td>Name</td><td>Answer</td></tr>";
+        $row = array();
+        $colorstyle = '';
+        for ($i = 0; $i < $numofbars; $i++) {
+            if ($evaluate) {
+                $colorstyle = "style='".color_style($rag, $fr[$i])."'";
+            }
+            $namesarray = explode(';;', $mynames[$i]);
+            sort($namesarray);
+            foreach ($namesarray as $stname) {
+                if (strlen($stname) > 0) {
+                    $row[] = "\n<tr style='height:10'><td>$stname</td><td $colorstyle>".$choice[$i]."</td></tr>";
+                }
+            }
+        }
+        if (count($row) > 0) {
+            sort($row);
+            foreach ($row as $onerow) {
+                echo $onerow;
+            }
+        }
+        echo "\n</table>";
+    }
+    // Adjust the iframe height so everything fits in just right.
+    $iframeheight = 560 + 24 * count($row);
+    echo "\n <script>";
+    echo "\n iframe = parent.document.getElementById('graphIframe');";
+    echo "\n iframe.height = $iframeheight;";
+    echo "\n </script>";
+
+} else {
+    echo "\n<br />";
+    $quizgraphicsurl = $CFG->wwwroot."/mod/quiz/report/liveviewpoll/poll_tooltip_graph.php";
+    $getstring = "id=$cmid&quizid=$quizid&courseid=$courseid&groupid=$groupid&mode=liveviewpoll";
+    $getstring .= "&rag=$rag&evaluate=$evaluate&order=$order";
+    if ($shownames) {
+        echo "<a href='".$quizgraphicsurl."?shownames=0&$getstring'>";
+        echo get_string('hidenames', 'quiz_liveviewpoll')."</a>";
+    } else {
+        echo "<a href='".$quizgraphicsurl."?shownames=1&$getstring'>";
+        echo get_string('shownames', 'quiz_liveviewpoll')."</a>";
+    }
+    foreach ($stans as $usr => $textanswer) {
+        echo "\n<br />";
+        if ($shownames) {
+            $user = $DB->get_record('user', array('id' => $usr));
+            echo $user->firstname." ".$user->lastname.": ";
+        }
+        echo strip_tags($textanswer);
+    }
 }
 
 /**
- * Function to find the number of students in a course or a group.
+ * This function returns the color code to be used in the style for a cell in a table.
  *
- * @param int $courseid The id for the course.
- * @param int $groupid The id number for the group. (0 is no group selected.)
- * @return int The number of student in the course or group.
+ * @param int $rag Indicates if the color scheme is rainbow or RAG.
+ * @param float $myfraction The fraction that a student receives for a given answer.
+ * @return string The text to be used for the background color.
  */
-function count_members($courseid, $groupid) {
-    global $DB;
-    $studentrole = $DB->get_record('role', array('shortname' => 'student'));
-    $context = context_course::instance($courseid);
-    $roster = $DB->get_records('role_assignments', array('contextid' => $context->id, 'roleid' => $studentrole->id));
-    if ($groupid > 0) {
-        $n = 0;
-        foreach ($roster as $members) {
-            if ($DB->get_record('groups_members', array('groupid' => $groupid, 'userid' => $members->userid))) {
-                $n++;
-            }
+function color_style($rag, $myfraction) {
+    if ($rag == 1) {// Colors from image from Moodle.
+        if ($myfraction < 0.01) {
+            $redpart = 244;
+            $greenpart = 67;
+            $bluepart = 54;
+        } else if ($myfraction == 1) {
+            $redpart = 139;
+            $greenpart = 195;
+            $bluepart = 74;
+        } else {
+            $redpart = 255;
+            $greenpart = 152;
+            $bluepart = 0;
         }
-        $count = $n;
     } else {
-        $count = count($roster);
-    }
-    return $count;
-}
-for ($i = 0; $i < $numofbars; $i++) {
-    // Create an array of the names so they can be ordered.
-    $namesstring = '';
-    $namesarray = explode(';;', $mynames[$i]);
-    sort($namesarray);
-    if (count($namesarray) > 1) {
-        $members = count_members($courseid, $groupid);
-        $val = ((count($namesarray) - 1) / $members) * 100;
-        $percent = round($val, 1);
-        $namesstring = $percent."%\n<br />";
-        if ($shownames) {
-            $namesstring .= implode(" ", $namesarray);
+        // Make .5 match up to Moodle amber even when making them different with gradation.
+        $greenpart = intval(67 + 212 * $myfraction - 84 * $myfraction * $myfraction);
+        $redpart = intval(244 + 149 * $myfraction - 254 * $myfraction * $myfraction);
+        if ($redpart > 255) {
+            $redpart = 255;
         }
+        $bluepart = intval(54 - 236 * $myfraction + 256 * $myfraction * $myfraction);
     }
-    $barleft = $baroffset + ($i * $xwidth);
-    echo "\n<div class=\"tooltip\" style=\"left: $barleft\">".$namesstring;
-    echo "</div>";
+    $colorstyle = " background-color: rgb($redpart, $greenpart, $bluepart);";
+    return $colorstyle;
 }
 
-echo "\n</image>";
 echo "\n</body>";
 echo "\n</html>";

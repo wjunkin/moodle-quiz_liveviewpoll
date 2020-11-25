@@ -30,3 +30,5 @@ Changes for v2.5.8. Removed tooltips from histogram labels and ability to show n
     Made the iframe window adjust to the size of the histogram plus the names table when names are shown.
 Changes for v2.6.1 (2020110901): Changed the algorythm so that the student is sent to the desired page instead of 
     changing the layout for the students. This change will keep other reports and grades intact.
+Changes for v2.6.2 (2020112500): Cleaned up javascript_refresh.js and put in code so the javascript will not do anything
+    unless the student is in the quiz (the url contains /mod/quiz/attempt.php/)

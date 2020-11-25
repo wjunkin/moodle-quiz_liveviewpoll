@@ -23,9 +23,7 @@
 
 var loc = String(window.location);
 var match = loc.match(/mod\/quiz\/attempt.php/);
-//alert('match is ' + match);
 if (match.len = 20) {
-//    alert('hello again');
     var http = false;
     var currentget = window.location.search;
     var newget = '';

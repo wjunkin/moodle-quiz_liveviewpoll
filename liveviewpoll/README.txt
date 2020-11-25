@@ -32,3 +32,5 @@ Changes for v2.6.1 (2020110901): Changed the algorythm so that the student is se
     changing the layout for the students. This change will keep other reports and grades intact.
 Changes for v2.6.2 (2020112500): Cleaned up javascript_refresh.js and put in code so the javascript will not do anything
     unless the student is in the quiz (the url contains /mod/quiz/attempt.php/)
+Changes for v2.6.3 (2020112502): Removed a bug. $row in poll_tooltip_graph.php wasn't defined in line 317 when names were hidden.
+    I moved the definition of $row = array(); up to line 292.

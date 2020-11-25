@@ -289,9 +289,9 @@ if ($histogram) {
 
     echo "\n<image src=\"".$CFG->wwwroot."/mod/quiz/report/liveviewpoll/graph.php?$mygraphinfo\" align='left'>";
     echo "\n</image>";
+    $row = array();
     if ($shownames) {
         echo "\n<br /><table border=1><tr><td>Name</td><td>Answer</td></tr>";
-        $row = array();
         $colorstyle = '';
         for ($i = 0; $i < $numofbars; $i++) {
             if ($evaluate) {

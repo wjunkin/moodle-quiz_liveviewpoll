@@ -25,7 +25,7 @@ var x = "";
 // Call at the beggining to save the start time.
 var start_time = new Date();
 var myCount = 0;
-var currentquestionurl = "currentquestion.php" + window.location.search;
+var currentquestionurl = "currentpage.php" + window.location.search;
 var nocurrentquestionurl = "nocurrentquestion.php" + window.location.search;
 if(navigator.appName == "Microsoft Internet Explorer") {
     http = new ActiveXObject("Microsoft.XMLHTTP")

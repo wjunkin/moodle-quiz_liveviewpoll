@@ -25,6 +25,9 @@ require_once(dirname(dirname(dirname(dirname(dirname(__FILE__))))).'/config.php'
 defined('MOODLE_INTERNAL') || die();
 $cmid = optional_param('cmid', 0, PARAM_INT);
 $attemptid = optional_param('attempt', 0, PARAM_INT);
+if (!($cmid) && !($attemptid)) {
+    $cmid = optional_param('id', 0, PARAM_INT);
+}
 if ($cmid > 0) {
     $cm = $DB->get_record('course_modules', array('id' => $cmid));
     $course = $DB->get_record('course', array('id' => $cm->course));
@@ -58,28 +61,33 @@ echo "\n<body>";
 // If yes and the teacher paused polling session more than an hour ago, echo too long between sending questions.
 // If no, echo spent too long on question page.
 $pollingsession = 0;
-$questionid = 0;
+$pageid = 0;
 if ($DB->record_exists('quiz_current_questions', array('quiz_id' => $cm->instance))) {
     $currentquestions = $DB->get_records('quiz_current_questions', array('quiz_id' => $cm->instance));
     foreach ($currentquestions as $currentquestion) {
         if ($currentquestion->groupid) {
             if (in_array($USER->id, explode(',', $currentquestion->groupmembers))) {
                 $pasttime = time() - $currentquestion->timemodified;
-                $questionid = $currentquestion->question_id;
+                $pageid = $currentquestion->page_id;
             }
         } else {
             $pasttime = time() - $currentquestion->timemodified;
-            $questionid = $currentquestion->question_id;
+            $pageid = $currentquestion->question_id;
         }
+    }
+    if (!(isset($pasttime))) {
+        echo "\n".get_string('notstudent', 'quiz_liveviewpoll');
+        echo "\n</body></html>";
+        exit;
     }
     // There should be only one or no currentquestion per user.
     // The variable pasttime is in seconds.
-    if (($pasttime < 3600) and ($questionid > 0)) {
+    if (($pasttime < 3600) and ($pageid > 0)) {
         // Go back to quiz. A question has been sent recently.
         echo "\n<script>";
         echo "\n     window.location.replace(\"$pollingreturnurl\");";
         echo "\n</script>";
-    } else if (($pasttime < 3600) and ($questionid == -1)) {
+    } else if (($pasttime < 3600) and ($pageid == -1)) {
         // Wait window.
         echo "<script src=\"javascript_noq_refresh.js\">
         </script>";
@@ -89,7 +97,7 @@ if ($DB->record_exists('quiz_current_questions', array('quiz_id' => $cm->instanc
         echo "<br />".get_string('pleaseclick', 'quiz_liveviewpoll');
         echo "<a href=\"$courseurl\">".get_string('here', 'quiz_liveviewpoll')."</a>";
         echo get_string('toreturn', 'quiz_liveviewpoll');
-    } else if ($questionid == -1) {
+    } else if ($pageid == -1) {
         // Teacher hasn't sent a question for more than an hour.
         echo get_string('noqforhour', 'quiz_liveviewpoll');
         echo "<a href=\"$pollingreturnurl\">".get_string('here', 'quiz_liveviewpoll')."</a>.";

@@ -28,3 +28,5 @@ Changes for v2.5.7. Added in the options to evaluate, showkey, and use RAG color
 Changes for v2.5.8. Removed tooltips from histogram labels and ability to show names on top of the histogram bars. 
     Added in a table showing question stems above the histogram and a table showing student answers below the histogram.
     Made the iframe window adjust to the size of the histogram plus the names table when names are shown.
+Changes for v2.6.1 (2020110901): Changed the algorythm so that the student is sent to the desired page instead of 
+    changing the layout for the students. This change will keep other reports and grades intact.

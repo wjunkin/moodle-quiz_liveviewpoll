@@ -20,42 +20,66 @@
  * @copyright  2020 onwards William F Junkin  <junkinwf@eckerd.edu>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-var http = false;
-var x = "";
-// Call at the beggining to save the start time.
-var start_time = new Date();
-var myCount = 0;
-var currentquestionurl = "report/liveviewpoll/currentquestion.php" + window.location.search;
-var nocurrentquestionurl = "report/liveviewpoll/nocurrentquestion.php" + window.location.search;
-if(navigator.appName == "Microsoft Internet Explorer") {
-    http = new ActiveXObject("Microsoft.XMLHTTP")
-} else {
-    http = new XMLHttpRequest();
-}
 
-function replace() {
-    // Compute seconds (does not matter when/how often you call it).
-    var milliseconds_since_start = new Date().valueOf() - start_time;
-    if(milliseconds_since_start < 3600000) {
-        var t = setTimeout("replace()",3000);
-        myCount++;
+var loc = String(window.location);
+var match = loc.match(/mod\/quiz\/attempt.php/);
+//alert('match is ' + match);
+if (match.len = 20) {
+//    alert('hello again');
+    var http = false;
+    var currentget = window.location.search;
+    var newget = '';
+    var obj = /page=\d+/.exec(currentget);
+    var x = "";
+    var mypage = '';
+    var newpage = '';
+    var str = obj + '';
+    var n = str.length;
+    if (str.length > 5) {
+        mypage = obj;
+    }
+    // Call at the begining to save the start time.
+    var start_time = new Date();
+    var nocurrentquestionurl = "report/liveviewpoll/nocurrentquestion.php" + window.location.search;
+    var currentpageurl = "report/liveviewpoll/currentpage.php" + window.location.search;
+    var quizpage = "http://localhost/moodle381/mod/quiz/attempt.php";
+    var thispage = window.location.href;
+    if(navigator.appName == "Microsoft Internet Explorer") {
+        http = new ActiveXObject("Microsoft.XMLHTTP")
     } else {
-        window.location.replace(nocurrentquestionurl);
+        http = new XMLHttpRequest();
     }
-    http.open("GET", currentquestionurl, true);
-    http.onreadystatechange = function() {
-        if(http.readyState == 4) {
-            if(x == 0 ){
-            } else if (x == -1) {
-                window.location.replace(nocurrentquestionurl);
-            } else if(http.responseText != x && myCount > 1 && http.responseText > 0){
-                window.location = window.location.href + '&x';
-            }
-            x = http.responseText;
-        }
-    }
-    http.send(null);
-    myCount++;
-}
 
-replace();
+    function replace() {
+        // Compute seconds (does not matter when/how often you call it).
+        var milliseconds_since_start = new Date().valueOf() - start_time;
+        if(milliseconds_since_start < 3600000) {
+            var t = setTimeout("replace()",3000);
+        } else {
+            window.location.replace(nocurrentquestionurl);
+        }
+
+        http.open("GET", currentpageurl, true);
+        http.onreadystatechange = function() {
+            if(http.readyState == 4) {
+                x = http.responseText;
+                var pagex = x - 1;
+                newpage = 'page=' + pagex;
+                if(x == 0 ){
+                } else if (x == -1) {
+                    window.location.replace(nocurrentquestionurl);
+                } else if(newpage != mypage && x > 0){
+                    if (mypage == '') {
+                        var newquestionurl = thispage + '&' + newpage;
+                    } else {
+                        var newquestionurl = thispage.replace(mypage, newpage);
+                    }
+                    window.location.replace(newquestionurl);
+                }
+            }
+        }
+        http.send(null);
+    }
+
+    replace();
+}

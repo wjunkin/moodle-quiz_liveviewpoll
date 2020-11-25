@@ -234,7 +234,6 @@ function quiz_send_question($quizid, $sendquestionid, $groupid) {
     $myquestionid = $sendquestionid;// The id of the question being sent.
     $cmid = optional_param('id', 0, PARAM_INT);// The cmid of the quiz.
     if ($myquestionid > 0 && $cmid > 0) {
-        quiz_update_attempt_layout($quizid, $myquestionid, $groupid);
         $quiz = $DB->get_record('quiz', array('id' => $quizid));
         $record = new stdClass();
         $record->id = '';
@@ -248,6 +247,8 @@ function quiz_send_question($quizid, $sendquestionid, $groupid) {
             $record->groupid = 0;
             $record->groupmembers = '';
         }
+        $slotpage = $DB->get_record('quiz_slots', array('quizid' => $quizid, 'questionid' => $sendquestionid));
+        $record->page_id = $slotpage->page;
         $record->question_id = $myquestionid;
         $record->timemodified = time();
         if ($DB->record_exists('quiz_current_questions', array('quiz_id' => $quiz->id, 'groupid' => $groupid))) {
@@ -267,35 +268,8 @@ function quiz_clear_question($quizid, $groupid) {
     global $DB;
     // We don't have to change the layout becuase the javascript will send the students to the no question page.
     $timemodified = time();
-    $DB->set_field('quiz_current_questions', 'question_id', '-1', array('quiz_id' => $quizid, 'groupid' => $groupid));
+    $DB->set_field('quiz_current_questions', 'page_id', '-1', array('quiz_id' => $quizid, 'groupid' => $groupid));
     $DB->set_field('quiz_current_questions', 'timemodified', $timemodified, array('quiz_id' => $quizid, 'groupid' => $groupid));
-}
-
-/**
- * Sets the layout for the students so that they see the correct question.
- *
- * @param int $quizid The id for this quiz.
- * @param int $questionid The id of the question that the student should see.
- * @param int $groupid The id of the group if one has been chosen, otherwise 0.
- */
-function quiz_update_attempt_layout($quizid, $questionid, $groupid) {
-    global $DB;
-    $slotid = pollingslot($quizid, $questionid);
-    $mylayout = $slotid.',0';
-    for ($i = 1; $i < 10; $i++) {
-        $mylayout = $mylayout.",$slotid,0";
-    }
-    if ($DB->record_exists('quiz_attempts', array('quiz' => $quizid, 'state' => 'inprogress'))) {
-        if ($groupid > 0) {
-            $userids = get_userids_for_group($groupid);
-            foreach ($userids as $usrid) {
-                $DB->set_field('quiz_attempts', 'layout', $mylayout,
-                    array('quiz' => $quizid, 'state' => 'inprogress', 'userid' => $usrid));
-            }
-        } else {
-            $DB->set_field('quiz_attempts', 'layout', $mylayout, array('quiz' => $quizid, 'state' => 'inprogress'));
-        }
-    }
 }
 
 /**
@@ -346,7 +320,7 @@ function quiz_instructor_buttons($quizid, $groupid) {
     $showkey = optional_param('showkey', 0, PARAM_INT);
     $order = optional_param('order', 0, PARAM_INT);
     $shownames = optional_param('shownames', 1, PARAM_INT);
-    $querystring = "mode=liveviewpoll&groupid=$groupid$showanswer=$showanswer&rag=$rag&eavluate=$evaluate";
+    $querystring = "mode=liveviewpoll&groupid=$groupid&showanswer=$showanswer&rag=$rag&eavluate=$evaluate";
     $querystring .= "&showkey=$showkey&order=$order&shownames=$shownames";
     if ($mycmid) {
         $querystring .= '&id='.$mycmid;
